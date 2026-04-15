@@ -35,7 +35,7 @@ preamble, or markdown code fences — raw JSON only, in this exact format:
 """
 
 # Read a doc file
-with open("webhooks-Admin-UI.md", "r") as f:
+with open("samples/webhooks-Admin-UI.md", "r") as f:
     doc_content = f.read()
 
 # Call the API
