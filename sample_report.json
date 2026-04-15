@@ -1,0 +1,26 @@
+{
+  "accuracy": {
+    "feedback": "Procedural steps align with a realistic Admin UI workflow, but the Edit Webhook section (step 6 note) incorrectly references the 'Create' button instead of 'Save,' which will confuse users performing an edit operation.",
+    "score": 4
+  },
+  "clarity": {
+    "feedback": "Steps are generally unambiguous, but Step 6 in 'Creating a webhook' introduces OAuth sub-steps without first clarifying that steps 6 and 7 are mutually exclusive transport-type branches — add a conditional lead-in such as 'If you selected HTTP, enter…; if you selected OAUTH, complete the following.'",
+    "score": 4
+  },
+  "completeness": {
+    "feedback": "The guide omits critical operational details: the retry schedule and maximum retry count before auto-disable, the full list of subscribable event types, payload schema or a link to it, and which HTTP response codes (beyond the 2xx range) trigger specific failure behaviors — all of which are essential for implementers.",
+    "score": 3
+  },
+  "consistency": {
+    "feedback": "Formatting conventions are inconsistent: 'Creating a webhook' uses numbered sub-steps with bold H3 headers, while all other sections use flat numbered lists with H2 headers; additionally, the note callout style switches between a blockquote '> Note:' format and inline prose without a callout, and 'turn on or off' in the section title conflicts with 'enable or disable' used in the body text.",
+    "score": 3
+  },
+  "overall": {
+    "score": 4,
+    "summary": "This is a solid, task-oriented how-to guide that will serve most users well; the primary areas for improvement are filling in missing operational details (retry logic, event catalog, payload schema), fixing the Edit/Create button mislabel, and enforcing consistent formatting and conditional branching language across all procedure sections."
+  },
+  "structure": {
+    "feedback": "The document correctly follows the Diátaxis how-to pattern with task-oriented headings and imperative steps, but the introductory paragraph mixes in brief conceptual statements ('enabling you to automate and enhance your processes') that belong in a separate explanation doc — trim these to keep the how-to focused purely on procedural guidance.",
+    "score": 4
+  }
+}
