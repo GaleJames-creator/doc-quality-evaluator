@@ -175,6 +175,33 @@ The evaluation criteria, scoring scale, and doc context are all controlled by th
 
 Adjust the scoring scale: The 1–5 scale can be changed to 1–10 or a pass/fail system by updating the prompt instructions.
 
+### Tips for writing effective prompts
+
+* Adopt a specialized persona: Assign the AI a specific role to ensure the evaluation maintains a professional tone and focus. For example:
+
+  ```text
+  Act as a Senior Technical Writer. Evaluate the technical guide for completeness, accuracy, and clarity.
+  ```
+
+* Provide an example of a good document. For example:
+
+  ```text
+  Here's an example of a good API document. [insert example]. Evaluate the following new document using the same standards.
+  ```
+
+* Structure the output. For example:
+
+  ```text
+  Provide the evaluation in a Markdown table with these columns: Issue Type (Accuracy/Clarity), Score (0-5), Feedback/Summary.
+  ```
+
+* Specify the output format explicitly: Tell the model exactly what format to return results in and what to exclude.
+
+  ```text
+    Return your response as JSON only. Do not include explanations, 
+    preambles, or Markdown code fences.
+  ```
+  
 ### Target different doc types
 
 The opening lines of `SYSTEM_PROMPT` currently specify API and developer doc for fintech. A writer documenting medical devices, legal software, or end-user consumer products would update that context to get more relevant feedback.
