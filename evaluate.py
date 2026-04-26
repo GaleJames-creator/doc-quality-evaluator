@@ -54,4 +54,4 @@ message = client.messages.create(
 raw = message.content[0].text
 clean = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
 result = json.loads(clean)
-print(json.dumps(result, indent=2))
+print(json.dumps(result, indent=2, ensure_ascii=False))

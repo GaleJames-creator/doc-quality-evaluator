@@ -2,7 +2,7 @@
 
 The `doc-quality-evaluator` (evaluator) uses Python and the Anthropic API to quickly assess doc quality. It streamlines reviews and leaves final judgment to editors.
 
-All doc samples in this portfolio were evaluated using this tool before publishing.
+All doc samples in the [portfolio](https://github.com/GaleJames-creator/gale-james) were evaluated using this tool before publishing.
 
 ## How it works
 
@@ -24,7 +24,7 @@ The evaluator returns your results only as JSON. It does not include any explana
 All major setup steps and output fields are documented, but the customization section lacks concrete examples of what the modified SYSTEM_PROMPT should look like for the suggested use cases.
 ```
 
-You can see the response to this feedback in [Replacing the Diátaxis criterion with a style guide check](#replacing-the-diátaxis-criterion-with-a-style-guide-check).
+You can see the response to this feedback in the [Replacing the Diátaxis criterion with a style guide check](#replacing-the-diátaxis-criterion-with-a-style-guide-check) section.
 
 After you update the Markdown doc based on the evaluator's feedback, you'll see the scores and evaluations improve. The following example shows the final result for this README doc.
 
@@ -98,7 +98,7 @@ Before running the evaluator, complete the following steps.
 
 1. Clone the `doc-quality-evaluator` repository to your machine.
 2. Run the `pip install -r requirements.txt` in your local Python environment to install the evaluator's Python dependencies.
-3. Add a `.env` file to the root level of the cloned environment and include your Anthropic key. 
+3. Add a `.env` file to the root level of the cloned environment and include your Anthropic key.
 
     ```bash
     ANTHROPIC_API_KEY=your-actual-key-here
@@ -126,11 +126,11 @@ Before running the evaluator, complete the following steps.
 
 7. Verify the raw JSON results appear in the output. It will look like:
 
-![JSON output example](images/JSON-output-example.png)
+    ![JSON output example](images/JSON-output-example.png)
 
 8. Repeat steps 4-7 for each additional Markdown file.
 
-## Usage 
+## Usage
 
 This section describes the JSON output format for reference.
 
@@ -148,12 +148,12 @@ Here’s an example of the JSON output format:
 }
 ```
 
-The [sample_report.json](./sample_report.json) shows a sample result without running it. 
+The [sample_report.json](./sample_report.json) shows a sample result without running it.
 
 ### Output fields
 
 | Field | Description |
-|-------|-------------|
+| ----- | ----------- |
 | `clarity` | Score and feedback on writing clarity and ambiguity |
 | `completeness` | Score and feedback on missing parameters, responses, or error codes |
 | `accuracy` | Score and feedback on code example correctness |
@@ -171,7 +171,7 @@ The evaluation criteria, scoring scale, and doc context are all controlled by th
 * Add a sixth criterion for SEO or accessibility.
 * Replace completeness with release notes-specific criteria like "are breaking changes clearly flagged."
 
-> **Note**: The `SYSTEM_PROMPT` is the single point of customization. Change that string, and the entire evaluation changes. 
+> **Note**: The `SYSTEM_PROMPT` is the single point of customization. Change that string, and the entire evaluation changes.
 
 Adjust the scoring scale: The 1–5 scale can be changed to 1–10 or a pass/fail system by updating the prompt instructions.
 
@@ -201,7 +201,6 @@ With this:
 
 Swap `claude-haiku-4-5-20251001` for a different model if higher accuracy is needed at a higher cost.
 
-
 ## Roadmap
 
 This document is primarily written to help developers get up and running with the `doc-quality-evaluator` and to clearly explain the technical details you need. Refer to this roadmap for future features for the evaluator.
@@ -211,14 +210,37 @@ This document is primarily written to help developers get up and running with th
 3. **Word document support**: Extend format support to .docx files using python-docx.
 4. **Scoring thresholds and pass/fail behavior**: Define minimum score thresholds per criterion. Flag or fail evaluation when scores fall below the threshold — supports enforcement in CI/CD pipelines.
 5. **GitHub Action integration**: Wire the evaluator script into a GitHub Action so every PR gets an automated doc quality check alongside your existing linting.
+6. **Line-level feedback**: Include line numbers in evaluation feedback to help writers locate specific issues without manual searching.
 
 ## Troubleshooting
 
 Refer to this section if you encounter any issues while running the evaluator.
 
+### Context-blind feedback
+
+The evaluator has no awareness of how a document fits into a larger documentation set. It evaluates each file in isolation. Feedback about missing definitions, unexplained terminology, or incomplete scope may reflect content that exists elsewhere in your documentation — for example, in a top-level README or a linked reference document.
+
+Always apply editorial judgment by considering the context of the entire documentation set, not just individual files, before acting on evaluator feedback.
+
 ### FileNotFoundError: [Errno 2] No such file or directory: 'my_doc.md'
 
-The folder and filename are incorrect or missing. Correct the folder and filename and try again.
+The folder and filename are incorrect or missing. Verify that the folder and filename are correct, then try again.
+
+### Error code 400: user messages must have non-empty content
+
+The file the evaluator is pointing to is empty or has no readable content. Open the file in your editor and confirm it contains text. If the file is empty, add content and run the evaluator again. Here's an example of the error message:
+
+```json
+anthropic.BadRequestError: Error code: 400 - {'type': 'error', 'error': {'type': 'invalid_request_error', 'message': 'messages.0: user messages must have non-empty content'}, 'request_id': 'req_011CaAADrvnXeUYsBcu8jQW7'}
+```
+
+### Feedback references broken or unverifiable links
+
+The evaluator cannot click or verify links, so it's penalizing you for not embedding content online. If the evaluator flags links as broken or unverifiable, manually test the links before making any changes. Use a link checker such as GitHub Actions for automated verification.
+
+### Unicode characters appear in the JSON output
+
+If Unicode characters appear in the JSON output, verify that `ensure_ascii=False` appears in the `evaluate.py` script and try again.
 
 ### 0 evaluation score
 
@@ -227,3 +249,7 @@ A zero (`0`) in the evaluation score indicates something went wrong with the eva
 * **Malformed or empty input file**: If the evaluator reads an empty .md file, the model has nothing to evaluate and might return the unfilled template
 * **Prompt misfire**: If the system prompt gets truncated or corrupted somehow, the model might return the default structure
 * **Non-doc input**: If someone accidentally points the evaluator at a non-doc file, like a config file or a script, the model might not know how to score it
+
+---
+
+Last updated:  April 2026
