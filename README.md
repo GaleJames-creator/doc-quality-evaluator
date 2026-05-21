@@ -277,6 +277,12 @@ A zero (`0`) in the evaluation score indicates something went wrong with the eva
 * **Prompt misfire**: If the system prompt gets truncated or corrupted somehow, the model might return the default structure
 * **Non-doc input**: If someone accidentally points the evaluator at a non-doc file, like a config file or a script, the model might not know how to score it
 
+## Changelog
+
+### May 2026
+
+* **Fix (consistency criterion)**: The evaluator incorrectly flagged camelCase JSON field names (e.g., `bookId`) and snake_case Python variable names (e.g., `book_id`) as inconsistent. These reflect correct language conventions. The consistency prompt now distinguishes cross-language naming differences (not a flag) from genuine inconsistencies such as mixed conventions within a single language or mismatched field names passed between languages.
+
 ---
 
-Last updated:  April 2026
+Last updated:  May 2026
