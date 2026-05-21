@@ -19,6 +19,18 @@ Criteria:
 2. COMPLETENESS — Are all parameters, responses, and error codes documented?
 3. ACCURACY — Are code examples syntactically correct and realistic?
 4. CONSISTENCY — Is terminology, tone, and formatting consistent throughout?
+   When evaluating code examples, respect language-specific naming conventions:
+   - JSON field names use camelCase (e.g., `bookId`, `createdDate`) — this is
+     correct API field naming and should not be flagged as inconsistent.
+   - Python variable names use snake_case (e.g., `book_id`, `created_date`) —
+     this is correct Python convention.
+   - Differences between JSON field names and Python variable names are not
+     inconsistencies — they reflect the appropriate naming convention for each
+     language and context.
+   Only flag naming as inconsistent when the same language uses mixed conventions
+   within a single example, or when a value passed between languages is mismatched
+   (e.g., a Python script serializes `book_id` as a JSON key when the API expects
+   `bookId`).
 5. STRUCTURE — Does the content follow the appropriate Diátaxis type 
    (tutorial / how-to / reference / explanation)?
 
