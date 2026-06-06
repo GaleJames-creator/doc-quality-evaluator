@@ -224,9 +224,50 @@ With this:
    Guide conventions for tone, voice, and terminology?
 ```
 
-### Change the model
+## Interpreting evaluator feedback
 
-Swap `claude-haiku-4-5-20251001` for a different model if higher accuracy is needed at a higher cost.
+Scores are a starting point, not a verdict. Read evaluator output carefully and avoid common interpretation mistakes.
+
+### Score ranges
+
+| Score | Interpretation |
+|-------|----------------|
+| 5 | No significant gaps identified |
+| 4 | Minor gaps — review feedback and decide whether to act |
+| 3 | Meaningful gaps — investigate and revise where appropriate |
+| 2 | Significant gaps — document likely needs revision |
+| 1 | Major gaps — document may need to be restructured |
+
+### Watch for false positives
+
+The evaluator does not know your document type, platform, or style guide. Watch for common false positives:
+
+* **Explanation** docs should not include procedural steps or code examples; instead, link to how-to guides.
+* **Requesting error response tables in how-to guides**: if the guide already links to a reference doc containing error codes, the completeness gap is addressed.
+* ***Snake_case Python variable names and camelCase JSON field names** are correct conventions for their respective languages and contexts, not inconsistencies.
+* **Overview** docs intentionally defer to reference docs for endpoint details; linking is the correct approach.
+* *Flagging intentional style choices as grammar errors**: technical writing conventions such as imperative voice and short sentences may trip up general grammar evaluation.
+
+### Cross-reference against the Diátaxis document type
+
+Each Diátaxis document type has different completeness standards. Apply the right criteria for the doc type before acting on feedback:
+
+* **Tutorials** should include prerequisites, step-by-step instructions, and a concrete outcome. Missing reference material is not a gap.
+* **How-to guides** should include steps, a response section, and links to related content. Missing conceptual background is not a gap — link to the explanation doc instead.
+* **Explanation docs** should answer “why” and “what.” Missing code examples or procedural steps is not a gap.
+* **Reference docs** should be complete and accurate. Missing examples or error codes are legitimate gaps.
+
+### Iterate, don't over-optimize
+
+Chasing a 5 on every criterion can lead to over-documentation. A how-to guide that scores 4 on structure because it contains a response section that follows standard how-to guide conventions, not failure. Use judgment when deciding whether to act on feedback.
+
+### Persistent low scores signal real gaps
+
+If the same criterion scores 3 or below across multiple evaluation runs after revisions, that’s a genuine signal worth addressing. Persistent low scores on accuracy or consistency are a higher priority than persistent low scores on completeness for overview and conceptual docs.
+
+### Example: justified score of 4
+
+A conceptual guide scores 4 on completeness because it lacks documentation for request parameters. This is a false positive — parameter documentation belongs in the reference doc, not the explanation doc. Verify the reference doc contains the parameters and link to it, not add a parameters table to the conceptual guide.
 
 ## Roadmap
 
