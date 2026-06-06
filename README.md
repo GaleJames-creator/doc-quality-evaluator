@@ -231,7 +231,7 @@ Scores are a starting point, not a verdict. Read evaluator output carefully and 
 ### Score ranges
 
 | Score | Interpretation |
-|-------|----------------|
+| ----- | -------------- |
 | 5 | No significant gaps identified |
 | 4 | Minor gaps — review feedback and decide whether to act |
 | 3 | Meaningful gaps — investigate and revise where appropriate |
@@ -246,14 +246,14 @@ The evaluator does not know your document type, platform, or style guide. Watch 
 * **Requesting error response tables in how-to guides**: if the guide already links to a reference doc containing error codes, the completeness gap is addressed.
 * ***Snake_case Python variable names and camelCase JSON field names** are correct conventions for their respective languages and contexts, not inconsistencies.
 * **Overview** docs intentionally defer to reference docs for endpoint details; linking is the correct approach.
-* *Flagging intentional style choices as grammar errors**: technical writing conventions such as imperative voice and short sentences may trip up general grammar evaluation.
+* **Flagging intentional style choices as grammar errors**: technical writing conventions such as imperative voice and short sentences may trip up general grammar evaluation.
 
 ### Cross-reference against the Diátaxis document type
 
 Each Diátaxis document type has different completeness standards. Apply the right criteria for the doc type before acting on feedback:
 
 * **Tutorials** should include prerequisites, step-by-step instructions, and a concrete outcome. Missing reference material is not a gap.
-* **How-to guides** should include steps, a response section, and links to related content. Missing conceptual background is not a gap — link to the explanation doc instead.
+* **How-to guides** should include steps, a response section, and links to related content. Missing conceptual background is not a gap &mdash; link to the explanation doc instead.
 * **Explanation docs** should answer “why” and “what.” Missing code examples or procedural steps is not a gap.
 * **Reference docs** should be complete and accurate. Missing examples or error codes are legitimate gaps.
 
@@ -326,4 +326,4 @@ A zero (`0`) in the evaluation score indicates something went wrong with the eva
 
 ---
 
-Last updated:  May 2026
+Last updated:  June 2026
