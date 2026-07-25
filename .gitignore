@@ -208,3 +208,7 @@ __marimo__/
 
 # macOS
 .DS_Store
+
+# Project-specific
+# Generated ChromaDB vector store — rebuilt by build_index.py, never committed
+chroma_db/

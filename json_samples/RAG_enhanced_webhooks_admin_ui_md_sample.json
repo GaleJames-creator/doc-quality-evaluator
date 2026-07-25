@@ -1,0 +1,26 @@
+{
+  "clarity": {
+    "score": 3,
+    "feedback": "The writing is generally clear and uses imperative mood appropriately, but several sections lack specificity about outcomes and error handling; for example, Step 3 in 'Creating a webhook' mentions OAuth options without clarifying when to choose each, and the statement 'If the endpoint fails to acknowledge events for several days, it will be disabled' lacks a clear definition of 'several days.'"
+  },
+  "completeness": {
+    "score": 2,
+    "feedback": "Critical gaps exist: no documentation of what fields appear on the Admin UI pages, what error states the user might encounter, how to troubleshoot failed webhook deliveries, what the webhook payload schema looks like, or which events are available to select in step 9 of 'Creating a webhook'—this violates the integration guide standard that code/configuration examples should explain 'what the developer should see after each step.'"
+  },
+  "accuracy": {
+    "score": 4,
+    "feedback": "The UI steps appear syntactically and procedurally correct based on standard Admin UI patterns, but without access to the actual Admin UI interface, complete verification is impossible; the webhook endpoint requirement to return a `2xx` status code is accurate, though the statement that 'the service treats a URL redirection as a failure' could be more precise (which 3xx codes trigger this?)."
+  },
+  "consistency": {
+    "score": 4,
+    "feedback": "Terminology and formatting are consistent throughout (Admin UI capitalized, field names in code formatting, numbered steps for sequential procedures), with one minor exception: the 'Create Webhook' section header and 'Creating a webhook' section header differ slightly in phrasing, though this does not materially affect understanding."
+  },
+  "structure": {
+    "score": 3,
+    "feedback": "The document follows how-to guide structure with numbered steps and prerequisites, but violates Diátaxis standards by conflating multiple independent how-to guides into one document (searching, creating, editing, enabling/disabling, revealing secrets, rotating secrets, viewing details, and deleting are eight separate tasks) and by including procedural explanation ('Creating a webhook allows your system to receive real-time notifications...') that belongs in explanatory or tutorial content rather than how-to guides."
+  },
+  "overall": {
+    "score": 3,
+    "summary": "This is a functional how-to document that successfully guides users through Admin UI webhook management tasks with clear numbering and prerequisites; however, it suffers from incomplete documentation of available event types and error scenarios, lacks explanation of when to use each OAuth grant type, and violates Diátaxis structure by bundling eight separate procedures into one document rather than separating them by task. For production use, add documentation of the webhook event types available, clarify the exact number of days before auto-disabling, explain OAuth grant type selection criteria, and consider splitting into focused single-task guides."
+  }
+}

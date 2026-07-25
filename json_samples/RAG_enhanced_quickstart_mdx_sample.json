@@ -1,0 +1,26 @@
+{
+  "clarity": {
+    "score": 4,
+    "feedback": "Writing is generally clear and uses imperative mood well (e.g., 'Send a POST request'). However, Step 4 uses 'Sort only by creation or update date in descending order' which is ambiguous — it's unclear whether this is a constraint on what the API supports, a recommendation, or a requirement for this example."
+  },
+  "completeness": {
+    "score": 2,
+    "feedback": "This is a tutorial/quickstart, not a reference doc, so inline parameter tables aren't expected. However, critical gaps exist: the POST body fields (title, author, etc.) lack type, required/optional status, and constraints; the PATCH finalize endpoint is missing documented parameters and error handling; query parameters for `/v2/books` (page, limit, sort, order) are mentioned but never documented with types or constraints; and all steps refer readers to external 'API endpoints' reference without inline guidance on what makes a request fail."
+  },
+  "accuracy": {
+    "score": 3,
+    "feedback": "Code examples are syntactically correct and use realistic values (book title, ISBN, price, dates). However, the curl examples contain a critical error: they use `{bookId}` as a literal placeholder in Step 2 and Step 3, but the introduction and Step 1 show `bookId` should be a concrete value like `bk_9x2m4k7p`. Readers will copy `{bookId}` literally, causing 404 errors; these should be `bk_9x2m4k7p` or clearly marked as 'replace with your bookId'."
+  },
+  "consistency": {
+    "score": 4,
+    "feedback": "Tone and formatting are consistent throughout (bold for field names, code formatting for endpoints/values, second person). JSON response examples use camelCase correctly (bookId, createdDate, hitCount). One minor inconsistency: Step 1 response shows full book details, but Step 2 response shows only partial details — this is acceptable but not explained, potentially confusing readers about which fields are always returned."
+  },
+  "structure": {
+    "score": 3,
+    "feedback": "This is a tutorial (task-oriented, assumes baseline knowledge, teaches a workflow), not a how-to guide. As a tutorial, it correctly includes prerequisites, numbered steps, and outcome verification. However, it violates tutorial structure by linking repeatedly to external reference docs instead of showing readers what to expect inline; best practice is inline parameter summaries with links to full reference for deep dives. The 'Test your integration' section is helpful but focuses on success criteria without addressing common failure modes with remediation."
+  },
+  "overall": {
+    "score": 3,
+    "summary": "This is a solid tutorial with clear structure and realistic examples, but it has critical accuracy issues (literal `{bookId}` placeholders that will fail), significant completeness gaps in parameter documentation (types, required/optional, constraints not shown), and some clarity ambiguities. Readers will struggle with error diagnosis because failure modes aren't documented and external links are the only reference. Inline parameter summaries and corrected placeholder examples would substantially improve usability."
+  }
+}

@@ -1,0 +1,85 @@
+{
+  "document": "README.md",
+  "description": "Comparison of the baseline evaluator (evaluate.py) and the RAG-enhanced evaluator (evaluate_rag.py) run against the same document — this project's own README. This run demonstrates a different lesson than earlier runs: neither evaluator returned a perfect score, the two mostly agreed, and both independently repeated the same factually incorrect claim about a section that already had the content they said was missing. The value of RAG grounding here isn't a higher completeness score — it's that the RAG-enhanced result comes with a retrieval trace that lets you check which guideline a finding is actually based on, rather than trusting the score alone.",
+  "note_on_retrieval_fields": "The knowledge_base and retrieved_chunks fields under rag_enhanced are compiled from the retrieval diagnostics evaluate_rag.py prints to the console before calling the API. They are not part of the JSON object the script returns — the returned JSON only ever contains the six criteria keys shown under results.",
+  "evaluated_version_note": "These results reflect the README as of this run, after the docType, overview, and guaranteed-retrieval additions, and after the Customization section's sixth-criterion and release-notes-criterion examples were added. Both evaluators nonetheless claimed those examples were missing — see comparison_notes.known_limitation. LLM evaluations are not deterministic — see the \"Expect run-to-run variance\" section in the README.",
+  "evaluations": {
+    "baseline": {
+      "script": "evaluate.py",
+      "knowledge_base": null,
+      "results": {
+        "clarity": {
+          "score": 4,
+          "feedback": "The document is generally well-written, but several technical concepts (RAG, ChromaDB, vector store) are introduced without upfront definitions, forcing readers to infer meaning from context; define these on first mention in the opening sections."
+        },
+        "completeness": {
+          "score": 4,
+          "feedback": "Setup and usage are thoroughly documented, but the Customization section describes changes without showing concrete before-and-after examples for each use case, leaving implementers uncertain how to adapt the SYSTEM_PROMPT effectively."
+        },
+        "accuracy": {
+          "score": 5,
+          "feedback": "All code examples, command syntax, and file paths are syntactically correct and realistic; JSON output samples and Python script references accurately reflect actual tool behavior."
+        },
+        "consistency": {
+          "score": 5,
+          "feedback": "Terminology (baseline vs. RAG-enhanced, Diátaxis types, docType), tone, and formatting are consistent throughout; naming conventions appropriately respect camelCase for JSON fields and snake_case for Python variables."
+        },
+        "structure": {
+          "score": 5,
+          "feedback": "The document successfully blends explanation (how RAG and the evaluator work), reference (command syntax, JSON output format), and procedural how-to content (setup and troubleshooting), organized logically with clear headings and a roadmap section that appropriately defers future features."
+        },
+        "overall": {
+          "score": 4,
+          "summary": "This is a well-structured, technically accurate guide that successfully explains a complex tool. Primary improvement areas are defining RAG, ChromaDB, and vector store terminology upfront (clarity), and expanding the Customization section with step-by-step before-and-after examples for each scenario (completeness). The document's strength lies in its consistent professional tone, correct technical syntax, and logical information hierarchy."
+        }
+      }
+    },
+    "rag_enhanced": {
+      "script": "evaluate_rag.py",
+      "knowledge_base": [
+        "api_doc_standards.md",
+        "diataxis_types.md"
+      ],
+      "retrieved_chunks": [
+        { "source": "api_doc_standards.md", "chunk": 5, "similarity_distance": 1.0840 },
+        { "source": "diataxis_types.md", "chunk": 1, "similarity_distance": 1.1386 },
+        { "source": "diataxis_types.md", "chunk": 5, "similarity_distance": 1.1561 },
+        { "source": "diataxis_types.md", "chunk": 2, "similarity_distance": 1.1568 },
+        { "source": "api_doc_standards.md", "chunk": 0, "similarity_distance": 1.1854 }
+      ],
+      "results": {
+        "clarity": {
+          "score": 4,
+          "feedback": "Writing is generally clear and well-organized, but several passages use dense technical language (e.g., 'ChromaDB — a local vector store, meaning a database that indexes text by meaning rather than keywords') that could be simplified for readers unfamiliar with RAG concepts; define jargon on first mention more consistently throughout."
+        },
+        "completeness": {
+          "score": 4,
+          "feedback": "All major setup steps, file structures, and output fields are documented; however, the Customization section describes what to change without showing concrete before-and-after examples for the suggested use cases (e.g., changing the scoring scale or adding a sixth criterion)."
+        },
+        "accuracy": {
+          "score": 5,
+          "feedback": "Code examples, command-line instructions, and file paths are syntactically correct and realistic; Python imports, terminal commands, and JSON structures are all accurate."
+        },
+        "consistency": {
+          "score": 5,
+          "feedback": "Terminology is consistent throughout (e.g., 'evaluator,' 'criterion/criteria,' 'docType,' 'RAG'); formatting of code blocks, file paths, and JSON output is uniform; command-line examples follow a consistent pattern."
+        },
+        "structure": {
+          "score": 4,
+          "feedback": "Document functions primarily as a how-to guide (setup and usage instructions) with explanation sections (RAG concept, Diátaxis types) and an overview (roadmap); the Roadmap section at the end introduces forward-looking content that doesn't fit the how-to-guide task orientation—consider moving it to a separate 'Future Enhancements' page or frontmatter note to avoid mixing procedural instruction with product roadmap."
+        },
+        "overall": {
+          "score": 4,
+          "summary": "This is a well-structured, accurate how-to guide with clear setup instructions and solid troubleshooting coverage. Primary improvements: (1) Simplify dense technical explanations of RAG and ChromaDB on first mention for readers new to these concepts. (2) Add concrete before-and-after examples in the Customization section to show exactly how to modify the SYSTEM_PROMPT for the suggested use cases. (3) Consider separating the Roadmap from procedural content, as it breaks the how-to-guide structure."
+        }
+      }
+    }
+  },
+  "comparison_notes": {
+    "headline": "Neither evaluator returned a perfect score this run, and the two mostly agreed — a different result than earlier runs, where baseline scored a perfect 5.0 and RAG-enhanced found gaps baseline missed entirely.",
+    "score_differences": "The two evaluators matched on clarity (4), completeness (4), accuracy (5), and consistency (5). They diverged only on structure: baseline scored 5, RAG-enhanced scored 4.",
+    "why_the_structure_scores_differ": "Baseline's structure feedback treats the Roadmap as an appropriate part of a hybrid document, with no standard cited. RAG-enhanced's lower score is grounded in the classification framework retrieved from diataxis_types.md — it explicitly argues the document 'functions primarily as a how-to guide' and that the Roadmap 'doesn't fit the how-to-guide task orientation.' The score gap is one point; the traceability gap is the real finding.",
+    "actionable_findings": "Both evaluators independently flagged the Customization section for lacking concrete before-and-after examples, naming 'changing the scoring scale' and 'adding a sixth criterion' as unaddressed cases. Both are wrong: this README has complete worked examples for both, added before this run.",
+    "known_limitation": "This is a confirmed, verifiable instance of the evaluator's 'occasional factually incorrect claims' limitation, caught independently by two different scripts agreeing on the same false finding. Agreement between baseline and RAG-enhanced is not evidence a claim is true. Verify any specific completeness or clarity claim against the actual source text, and use the retrieval trace in the RAG-enhanced result to check which guideline a finding is actually based on before acting on it."
+  }
+}

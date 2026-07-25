@@ -1,0 +1,253 @@
+---
+title: 'BookHub Publisher quickstart'
+description: 'Get up and running with the BookHub Publisher API v2 in minutes, including how to obtain your JWT and authenticate requests.'
+keywords: ['first API call', 'onboarding', 'getting started', 'quick start']
+docType: tutorial
+---
+
+import IsbnNote from '/snippets/isbn-note.mdx';
+import Hitcount from '/snippets/hitcount.mdx';
+import Prerequisites from '/snippets/prerequisites.mdx';
+
+## Introduction
+
+This quickstart walks you through the core BookHub Publisher API workflow: creating a book, finalizing it for publication, and retrieving it to confirm it's live. By the end, you'll have a book listed as `ACTIVE` on the BookHub marketplace and a working foundation for building your integration.
+
+## Prerequisites
+
+<Prerequisites />
+
+<Note> To create a BookHub Publisher account and obtain a JWT, email api-support@bookhub.com with your publisher information. </Note>
+
+* A BookHub Publisher account. 
+* A valid JWT for authentication. 
+* An HTTPS client (curl, Postman, or programming language HTTP library).
+
+## Step 1: Create a book (returns `PENDING` status)
+
+Send a `POST` request to the `/v2/books` endpoint with the required fields to create a book. The status will be `PENDING` until finalized. For additional information on required and optional fields, see the [Create a book](/reference/reference-api-endpoints#create-a-book).
+
+<IsbnNote />
+
+```bash
+curl -X POST https://api.bookhub.com/api/v2/books \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Idempotency-Key: 550e8400-e29b-41d4-a716-446655430000" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "My New Book",
+    "author": "John Doe",
+    "description": "A new biography from a well-known author",
+    "language": "en-US", 
+    "publisher": "My Publishing House",
+    "publishedDate": "2026-03-15",
+    "isbn": "978-3-16-148410-0",
+    "price": 24.99,
+    "coverImages": ["https://example.com/cover.jpg"],
+    "genres": ["Fiction", "Adventure"],
+    "bookFormat": "Hardcover"
+  }'
+  ```
+
+### Create book response (201 Created)
+
+The response returns the new book’s details, including its `bookId`, which you can use in future requests. The initial status is `PENDING`. See the [Error codes](/reference/reference-api-endpoints#error-codes) for error codes.
+
+```json
+{
+  "status": "success",
+  "message": "Book created successfully",
+  "data": {
+    "bookId": "123e4567-e89b-41d4-a716-426614170300",
+    "title": "My New Book",
+    "author": "John Doe",
+    "description": "A new biography from a well-known author",
+    "language": "en-US",
+    "publisher": "My Publishing House",
+    "publishedDate": "2026-03-15",
+    "isbn": "978-3-16-148410-0",
+    "price": 24.99,
+    "status": "PENDING",
+    "coverImages": [
+      "https://example.com/cover.jpg"
+    ],
+    "genres": [
+      "Fiction",
+      "Adventure"
+    ],
+    "bookFormat": "Hardcover",
+    "createdDate": "2026-03-12T09:15:00Z",
+    "updatedDate": "2026-03-12T09:15:00Z"
+  }
+}
+```
+
+## Step 2: Finalize the book (move from `PENDING` → `ACTIVE`)
+
+Change the book’s status from `PENDING` to `ACTIVE` with this request. Use the `bookId` from the previous response (e.g., `123e4567-e89b-41d4-a716-426614170300`). The `updatedDate` will reflect the change.
+
+```bash
+curl -X PATCH https://api.bookhub.com/api/v2/books/123e4567-e89b-41d4-a716-426614170300/finalize \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"notes": "Ready for publication."}'
+```
+
+  Books must be finalized before becoming visible to customers. For more information, see the [Finalize a book](/reference/reference-api-endpoints#finalize-a-book) endpoint.
+
+### Finalize book response (200 OK)
+
+The response shows `ACTIVE` status. See the [Error codes](/reference/reference-api-endpoints#error-codes) for error codes.
+
+```json
+{
+  "status": "success",
+  "message": "Book finalized successfully",
+  "data": {
+    "bookId": "123e4567-e89b-41d4-a716-426614170300",
+    "title": "My New Book",
+    "status": "ACTIVE",
+    "updatedDate": "2026-04-18T10:30:00Z"
+  }
+}
+```
+
+## Step 3: Get the book to see `hitCount` (starts at 0)
+
+Send a `GET` request to `/v2/books/{bookId}` using the `{bookId}` value from the create step (e.g., `bk_9x2m4k7p`).
+
+The response includes `hitCount`, starting at `0`. 
+<Hitcount />
+See the [Error codes](/reference/reference-api-endpoints#error-codes) for error codes.
+
+```bash
+curl -X GET https://api.bookhub.com/api/v2/books/123e4567-e89b-41d4-a716-426614170300 \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### Get book response (200 OK)
+
+```json
+{
+  "status": "success",
+  "data": {
+    "bookId": "123e4567-e89b-41d4-a716-426614170300",
+    "title": "My New Book",
+    "author": "John Doe",
+    "description": "A new biography from a well-known author",
+    "language": "en-US",
+    "publisher": "My Publishing House",
+    "publishedDate": "2026-03-15",
+    "isbn": "978-3-16-148410-0",
+    "price": 24.99,
+    "status": "ACTIVE",
+    "coverImages": [
+      "https://example.com/cover.jpg"
+    ],
+    "genres": [
+      "Fiction",
+      "Adventure"
+    ],
+    "bookFormat": "Hardcover",
+    "createdDate": "2026-03-12T09:15:00Z",
+    "updatedDate": "2026-03-12T10:30:00Z",
+    "hitCount": 0
+  }
+}
+```
+
+## Step 4: List all books
+
+Send a `GET` request to `/v2/books` to list all your books. Sort only by creation or update date in descending order.
+
+<Note>Use `page` and `limit` query parameters for pagination. See [Handle pagination](/how-to-guides/how-to-guides-handle-pagination) for more information.</Note>
+
+```bash
+curl -X GET https://api.bookhub.com/api/v2/books?sort=createdDate&order=desc \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### List all books response (200 OK)
+
+The response includes your books and pagination details. See the [Error codes](/reference/reference-api-endpoints#error-codes) for error codes.
+
+```json
+{
+  "status": "success",
+  "data": {
+    "books": [
+      {
+        "bookId": "123e4567-e89b-41d4-a716-426614170300",
+        "title": "My New Book",
+        "author": "John Doe",
+        "status": "ACTIVE",
+        "price": 24.99,
+        "createdDate": "2026-03-14T09:15:00Z"
+      },
+      {
+        "bookId": "123e4567-e89b-41d4-a716-426614174000",
+        "title": "The Great Adventure",
+        "author": "Jane Smith",
+        "status": "ACTIVE",
+        "price": 19.99,
+        "createdDate": "2026-03-12T14:22:00Z"
+      },
+      {
+        "bookId": "123e4567-e89b-41d4-a716-4266141701000",
+        "title": "Mysteries of the Deep",
+        "author": "Robert Chen",
+        "status": "PENDING",
+        "price": 29.99,
+        "createdDate": "2026-03-17T08:45:00Z"
+      }
+    ],
+    "pagination": {
+      "currentPage": 1,
+      "totalPages": 5,
+      "totalItems": 87,
+      "itemsPerPage": 20
+    }
+  }
+}
+```
+
+## Step 5: Test your integration
+
+Verify your integration is working correctly by confirming the following:
+
+* The create book request returns `201 Created` with a `bookId` in the response.
+* The `status` field in the create response is `PENDING`.
+* The `/v2/books/{bookId}/finalize` request returns `200 OK` with `status: ACTIVE`.
+* The `/v2/books/{bookId}` request returns the book with `hitCount: 0`.
+* The `/v2/books` request returns your new book in the results.
+
+If any step fails, check the following:
+
+* Your JWT is valid and included in the `Authorization` header.
+* The `bookId` in Steps 2–3 matches the value returned in Step 1.
+* The book status is `PENDING` before finalizing — calling finalize on an `ACTIVE` book returns a `400` error.
+
+For a complete list of error codes, see [Error codes](/reference/reference-api-endpoints#error-codes).
+
+## Next steps
+
+Explore related topics:
+
+### Conceptual guides
+
+* [Using the `hitCount` field for analytics](/conceptual-guides/conceptual-guides-hitcount-analytics) &mdash; Learn how the `hitCount` field tracks customer interest in specific titles.
+
+### How-to guides
+
+* [Migrate to BookHub Publisher API v2](/how-to-guides/how-to-guides-migrate-bookhub) &mdash; Update your code to use BookHub Publisher API v2’s new features.
+* [Migrate away from title sorting](/how-to-guides/how-to-guides-migrate-away-from-title-sorting) &mdash; Update your code to remove title sorting in BookHub Publisher API v2.
+* [Handle pagination](/how-to-guides/how-to-guides-handle-pagination) &mdash; Implement pagination to retrieve all books when your catalog exceeds the API's page size limit.
+
+### Reference
+
+* [Track high-performing books with `hitCount`](/reference/reference-code-examples#track-high-performing-books-with-hitcount) &mdash; Example code for using the `hitCount` field in PHP.
+* [Release notes](/reference/reference-release-notes) &mdash; Explore all changes in BookHub Publisher API v2.
+* [API endpoints](/reference/reference-api-endpoints) &mdash; Explore all available API endpoints and their parameters for BookHub Publisher API v2.
+
+---
+[← Back to landing page](/index)
