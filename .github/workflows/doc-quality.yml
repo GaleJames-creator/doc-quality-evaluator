@@ -1,0 +1,81 @@
+name: Doc quality
+
+# Scores changed documentation on every pull request, posts the results as a
+# sticky PR comment, and fails the check when any doc falls below the threshold.
+
+on:
+  pull_request:
+    paths:
+      - "samples/**"
+      - "knowledge_base/**"
+      - "evaluate_core.py"
+      - "ci/**"
+      - "requirements.txt"
+      - ".github/workflows/doc-quality.yml"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: doc-quality-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  doc-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so we can diff against the base branch
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build knowledge-base index
+        run: python build_index.py
+
+      - name: Evaluate changed docs
+        id: eval
+        continue-on-error: true   # a below-threshold result is enforced below, after the comment posts
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GITHUB_BASE_REF: ${{ github.base_ref }}
+          DOC_QUALITY_THRESHOLD: "3"
+        run: python ci/evaluate_changed.py
+
+      - name: Post results comment
+        if: steps.eval.outputs.changed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- doc-quality-report -->';
+            const body = fs.readFileSync('ci_report.md', 'utf8');
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner, repo, issue_number, per_page: 100,
+            });
+            const existing = comments.find(c => c.body && c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body });
+            }
+
+      - name: Enforce quality threshold
+        if: always() && steps.eval.outcome != 'success'
+        run: |
+          echo "Documentation quality check did not pass (below threshold or evaluation error)."
+          echo "See the pull request comment for per-file scores and feedback."
+          exit 1
