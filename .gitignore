@@ -212,3 +212,5 @@ __marimo__/
 # Project-specific
 # Generated ChromaDB vector store — rebuilt by build_index.py, never committed
 chroma_db/
+# CI runner output (generated)
+ci_report.md

@@ -236,7 +236,12 @@ This applies to both `.md` and `.mdx` files, not just MDX.
 The repository contains the following files.
 
 ```text
+├── .github/
+│   └── workflows/
+│       └── doc-quality.yml                           # GitHub Action: scores changed docs on each PR and gates on a score threshold
 ├── chroma_db/                                        # The local ChromaDB vector store
+├── ci/
+│   └── evaluate_changed.py                           # CI runner: evaluates changed docs, writes the PR-comment report, and enforces the gate
 ├── images/
 │   ├── baseline-evaluation-pipeline.png              # baseline evaluation workflow diagram
 │   ├── RAG_enhanced_output_sample.png                # RAG-enhanced evaluation output sample
@@ -256,7 +261,8 @@ The repository contains the following files.
 │   └── sample_comparison_report.txt                  # Side-by-side comparison of baseline and RAG-enhanced results for README.md
 ├── build_index.py                                    # Indexes the knowledge_base/ folder into the local ChromaDB vector store used by evaluate_rag.py
 ├── evaluate.py                                       # Main evaluation script
-├── evaluate_rag.py                                   # Extends evaluate.py by retrieving relevant documentation guidelines from the local ChromaDB vector store before calling the Anthropic API
+├── evaluate_core.py                                  # Shared evaluation logic imported by evaluate_rag.py and the CI runner
+├── evaluate_rag.py                                   # Command-line RAG evaluator (retrieves guidelines from ChromaDB, then calls the Anthropic API)
 ├── LICENSE                                           # MIT License
 ├── README.md                                         # The doc-quality-evaluator overview
 └── requirements.txt                                  # Python dependencies
@@ -296,6 +302,44 @@ Before running the evaluator, complete the following steps.
     ![`RAG-enhanced` output example](./images/RAG_enhanced_output_sample.png)
 
 8. Repeat steps 5-7 for each additional Markdown or MDX file.
+
+## Continuous integration
+
+The evaluator runs automatically on pull requests through the GitHub Action defined in `.github/workflows/doc-quality.yml`. On every PR that changes a documentation file, the action scores the changed docs against the knowledge base, posts the results as a comment on the PR, and fails the check when any doc scores below a configurable threshold — turning the evaluator from a local script into an automated quality gate alongside your existing linting.
+
+### What the action does
+
+When a pull request touches files under `samples/` (or the knowledge base, evaluator, or runner), the workflow checks out the branch, installs dependencies, rebuilds the ChromaDB index from `knowledge_base/`, and runs `ci/evaluate_changed.py`. The runner diffs the branch against the PR base, evaluates only the documentation files that changed, and writes a Markdown report. The workflow posts that report as a single sticky comment — updated in place on later pushes rather than added as a new comment each time — containing a per-file score table and collapsible per-criterion feedback. If any changed doc scores below the threshold, or cannot be evaluated, the check fails so the PR cannot be merged under branch protection.
+
+### One-time setup
+
+1. Add your Anthropic key as a repository secret named `ANTHROPIC_API_KEY` (**Settings → Secrets and variables → Actions → New repository secret**). The workflow reads the key from this secret; it is never committed.
+2. (Optional) To block merges automatically, add a branch protection rule on `main` (**Settings → Branches**) that requires the **Doc quality** check to pass.
+
+That is all that is required — the workflow triggers itself on the next pull request.
+
+### Configuration
+
+The workflow is configured through environment variables in the `Evaluate changed docs` step:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `DOC_QUALITY_THRESHOLD` | `3` | Minimum acceptable `overall` score (1–5). Docs scoring below this fail the check. |
+| `DOC_PATHS` | `samples` | Directory holding the docs under evaluation. |
+| `ANTHROPIC_API_KEY` | — | Supplied from the repository secret; required for the model call. |
+
+Cost is bounded because only the documentation files changed in the pull request are evaluated, using the low-cost `claude-haiku-4-5` model.
+
+### Running the CI check locally
+
+`ci/evaluate_changed.py` also runs outside CI, which is useful before opening a PR:
+
+```text
+python3 ci/evaluate_changed.py                 # evaluate every doc under DOC_PATHS
+python3 ci/evaluate_changed.py samples/my-doc.mdx   # evaluate specific files
+```
+
+It writes the same Markdown report to `ci_report.md` and exits non-zero when a doc is below the threshold.
 
 ## Output reference
 
@@ -559,10 +603,10 @@ This document is primarily written to help developers get up and running with th
 1. **RAG evaluation**: Completed July 2026. Read and evaluate Markdown and MDX files using RAG and output a report.
 2. **MDX support**: Completed July 2026. Extend format support to `.mdx` files.
 3. **Batch evaluation**: Read and evaluate a set of files (Markdown, OpenAPI YAML, etc.) and output a report.
-4. **Markdown report generation**: Generate a Markdown report.
+4. **Markdown report generation**: Completed July 2026. The CI runner generates a Markdown report of per-file scores and feedback (see [Continuous integration](#continuous-integration)).
 5. **Word document support**: Extend format support to `.docx` files using python-docx.
-6. **Scoring thresholds and pass/fail behavior**: Define minimum score thresholds per criterion. Flag or fail evaluation when scores fall below the threshold — supports enforcement in CI/CD pipelines.
-7. **GitHub Action integration**: Wire the evaluator script into a GitHub Action so every PR gets an automated doc quality check alongside your existing linting.
+6. **Scoring thresholds and pass/fail behavior**: Completed July 2026. A configurable overall-score threshold flags and fails evaluation when a doc scores below it, enforced in the CI gate.
+7. **GitHub Action integration**: Completed July 2026. The evaluator runs on every pull request, comments the scores, and fails the check below the threshold (see [Continuous integration](#continuous-integration)).
 8. **Line-level feedback**: Include line numbers in evaluation feedback to help writers locate specific issues without manual searching.
 
 ## Known limitations
@@ -627,6 +671,9 @@ A zero (`0`) in the evaluation score indicates something went wrong with the eva
 
 ### July 2026
 
+* Added continuous integration via a GitHub Action (`.github/workflows/doc-quality.yml` and `ci/evaluate_changed.py`). On each pull request it scores the changed documentation files, posts a sticky comment with a per-file score table and per-criterion feedback, and fails the check when any doc scores below a configurable `DOC_QUALITY_THRESHOLD` (default `3`). See [Continuous integration](#continuous-integration).
+* Extracted the shared evaluation logic into `evaluate_core.py`, imported by both `evaluate_rag.py` (CLI) and the CI runner, so the two share a single source of truth. `evaluate_rag.py` is now a thin command-line wrapper with unchanged behavior and output.
+* Fixed `requirements.txt`, which was missing `chromadb` and `python-frontmatter` (both imported by the evaluator).
 * Added the `RAG-enhanced` evaluation feature (`evaluate_rag.py`, `build_index.py`, and the `knowledge_base/` folder).
 * Added `docType` frontmatter support to `evaluate_rag.py`. The declared type is read and passed into the evaluation prompt, so the Structure and Completeness criteria are graded against that type's own checklist instead of an inferred one.
 * Added `overview` as a fifth, practical (non-canonical) Diátaxis type in `diataxis_types.md`, for navigational index and hub pages.
