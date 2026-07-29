@@ -619,7 +619,7 @@ This document is primarily written to help developers get up and running with th
 
 * **Inconsistent criterion assignment**: The same condition (missing code examples) was scored as accuracy-neutral in one run and accuracy-penalizing in another. Findings should be checked against the actual guideline criterion, not assumed consistent run-to-run.
 
-* **Nondeterministic JSON parse failures**: The evaluator asks the model to return raw JSON, but the model occasionally emits unescaped double quotes inside a feedback string (e.g., quoting `"Update all API URLs"` mid-sentence), which produces invalid JSON. The repair fallback in both scripts recovers many cases but not all; when it can't, the run prints a `JSON parse error` and the raw response instead of parsed results. This is nondeterministic — the same document can parse cleanly on one run and fail on the next with no content change (confirmed on the v2 migration guide, which failed once on unescaped quotes and parsed on an immediate rerun). If you hit it, rerun before assuming anything is wrong with the document; the scores in the raw dump are still valid if you need them before rerunning.
+* **Nondeterministic JSON parse failures (baseline `evaluate.py` only)**: `evaluate.py` asks the model to return raw JSON, and the model occasionally emits unescaped double quotes inside a feedback string (e.g., `("winner")`), which produces invalid JSON that the repair fallback can't always recover — the run then prints a `JSON parse error` and the raw response instead of parsed results. The RAG evaluator (`evaluate_rag.py`, `evaluate_core.py`, and the CI runner) is no longer affected: it uses structured tool output, so the model returns an already-parsed object with no JSON-in-text step to fail. If you hit a parse error on the baseline evaluator, rerun it or use the RAG evaluator instead.
 
 ## Troubleshooting
 
@@ -649,7 +649,7 @@ anthropic.BadRequestError: Error code: 400 - {'type': 'error', 'error': {'type':
 
 ### JSON parse error
 
-If the model's response can't be parsed as JSON, the evaluator prints the parse error and the raw response for debugging, then exits. This can happen when the response contains unescaped quotes or is truncated. Run the evaluation again — if the error persists for a long document, the response may be exceeding the token limit (see `max_tokens` in the script).
+If the model's response can't be parsed as JSON, the evaluator prints the parse error and the raw response for debugging, then exits. This can happen when the response contains unescaped quotes or is truncated. Run the evaluation again — if the error persists for a long document, the response may be exceeding the token limit (see `max_tokens` in the script). This applies to the baseline `evaluate.py` only: the RAG evaluator (`evaluate_rag.py`) and the CI runner use structured tool output and do not parse JSON from text, so they are not subject to this error.
 
 ### Feedback references broken or unverifiable links
 
@@ -671,6 +671,7 @@ A zero (`0`) in the evaluation score indicates something went wrong with the eva
 
 ### July 2026
 
+* Switched the RAG evaluator to structured tool-use output. `evaluate_rag.py`, `evaluate_core.py`, and the CI runner now receive the evaluation as a forced `submit_evaluation` tool call, so the SDK returns an already-parsed object instead of JSON embedded in text. This eliminates the nondeterministic `JSON parse error` failures caused by unescaped double quotes inside feedback strings (e.g., a doc scoring 4.6 that errored on a `("winner")` quote). No new dependency required.
 * Added continuous integration via a GitHub Action (`.github/workflows/doc-quality.yml` and `ci/evaluate_changed.py`). On each pull request it scores the changed documentation files, posts a sticky comment with a per-file score table and per-criterion feedback, and fails the check when any doc scores below a configurable `DOC_QUALITY_THRESHOLD` (default `3`). See [Continuous integration](#continuous-integration).
 * Extracted the shared evaluation logic into `evaluate_core.py`, imported by both `evaluate_rag.py` (CLI) and the CI runner, so the two share a single source of truth. `evaluate_rag.py` is now a thin command-line wrapper with unchanged behavior and output.
 * Fixed `requirements.txt`, which was missing `chromadb` and `python-frontmatter` (both imported by the evaluator).

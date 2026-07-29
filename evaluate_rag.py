@@ -30,8 +30,7 @@ from evaluate_core import (
     retrieve_guidelines,
     format_guidelines,
     build_system_prompt,
-    call_model,
-    parse_result,
+    score_document,
 )
 
 
@@ -73,11 +72,8 @@ def main() -> int:
     system_prompt = build_system_prompt(format_guidelines(retrieved), doc_type)
 
     print("\nCalling Anthropic API...")
-    raw = call_model(system_prompt, doc_content)
-
-    # ── Parse and print results ──────────────────────────────────────────────
     try:
-        result = parse_result(raw)
+        result = score_document(system_prompt, doc_content)
     except ValueError as exc:
         print(f"\n{exc}")
         return 1
