@@ -48,46 +48,45 @@ CRITERIA = ["clarity", "completeness", "accuracy", "consistency", "structure"]
 # is no text-to-JSON step that can fail — this eliminates the class of parse errors
 # caused by unescaped quotes inside feedback strings.
 
-def _criterion_schema(name: str) -> dict:
-    return {
-        "type": "object",
-        "properties": {
-            "score": {
-                "type": "integer", "minimum": 1, "maximum": 5,
-                "description": f"{name.capitalize()} score from 1 (poor) to 5 (excellent).",
-            },
-            "feedback": {
-                "type": "string",
-                "description": "One sentence of specific, actionable feedback.",
-            },
-        },
-        "required": ["score", "feedback"],
+def _flat_properties() -> dict:
+    props: dict = {}
+    for c in CRITERIA:
+        props[f"{c}_score"] = {
+            "type": "integer", "minimum": 1, "maximum": 5,
+            "description": f"{c.capitalize()} score from 1 (poor) to 5 (excellent).",
+        }
+        props[f"{c}_feedback"] = {
+            "type": "string",
+            "description": f"One sentence of specific, actionable feedback on {c}.",
+        }
+    props["overall_score"] = {
+        "type": "number", "minimum": 1, "maximum": 5,
+        "description": "Overall quality score from 1 to 5.",
     }
+    props["overall_summary"] = {
+        "type": "string",
+        "description": "A short overall summary of the evaluation.",
+    }
+    return props
 
 
+# The schema is intentionally FLAT (top-level scalar fields, no nested objects).
+# Small models fill flat integer/string fields far more reliably than nested
+# {score, feedback} objects — Haiku frequently mangled the nested inner fields,
+# leaking tool-call syntax into the values. score_document reassembles these flat
+# fields into the nested {criterion: {score, feedback}} shape the rest of the code
+# expects, so callers are unaffected.
 RESULT_TOOL = {
     "name": "submit_evaluation",
-    "description": "Submit the documentation quality scores and feedback for each criterion.",
+    "description": "Submit the documentation quality score and feedback for each criterion.",
     "input_schema": {
         "type": "object",
-        "properties": {
-            **{c: _criterion_schema(c) for c in CRITERIA},
-            "overall": {
-                "type": "object",
-                "properties": {
-                    "score": {
-                        "type": "number", "minimum": 1, "maximum": 5,
-                        "description": "Overall quality score from 1 to 5.",
-                    },
-                    "summary": {
-                        "type": "string",
-                        "description": "A short overall summary of the evaluation.",
-                    },
-                },
-                "required": ["score", "summary"],
-            },
-        },
-        "required": [*CRITERIA, "overall"],
+        "properties": _flat_properties(),
+        "required": (
+            [f"{c}_score" for c in CRITERIA]
+            + [f"{c}_feedback" for c in CRITERIA]
+            + ["overall_score", "overall_summary"]
+        ),
     },
 }
 
@@ -144,6 +143,27 @@ def load_document(doc_path: str):
         content = post.content
 
     return content, doc_type
+
+
+def is_evaluation_skipped(doc_path: str) -> bool:
+    """
+    Return True if the document opts out of evaluation via frontmatter.
+
+    A doc is skipped when its frontmatter sets `skip-evaluation: true`. This lets
+    non-API pages — portfolio overviews, process memos, changelogs — avoid being
+    graded against the API-reference rubric (and wrongly failing the CI gate).
+    Honored by the CI runner; the interactive CLI evaluates whatever file it is
+    explicitly given.
+    """
+    try:
+        value = frontmatter.load(doc_path).metadata.get("skip-evaluation")
+    except FileNotFoundError:
+        return False
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.strip().lower() in {"true", "yes", "1"}
+    return bool(value)
 
 
 # ── Vector store ─────────────────────────────────────────────────────────────
@@ -279,14 +299,48 @@ through the tool — do not write any prose in your reply.
 
 # ── Model call (structured output) ───────────────────────────────────────────
 
+def _clean_score_text(score, text):
+    """
+    Normalize a (score, text) pair from the flat tool output.
+
+    The score should be numeric, but the model occasionally misfiles the feedback
+    sentence into the score field (leaving the text field empty). When the score
+    isn't a number, recover it as the text so nothing is lost and the score column
+    stays clean.
+    """
+    text = str(text or "").strip()
+    if isinstance(score, bool):          # bool is a subclass of int — treat as invalid
+        return None, text
+    if isinstance(score, (int, float)):
+        return score, text
+    if isinstance(score, str):
+        s = score.strip()
+        try:
+            return (float(s) if s else None), text
+        except ValueError:
+            return None, (text or s)     # non-numeric string in the score field → recover as text
+    return None, text
+
+
+def _nest_result(flat: dict) -> dict:
+    """Reassemble the flat tool fields into the nested shape, tolerating misfiled fields."""
+    result = {}
+    for c in CRITERIA:
+        score, feedback = _clean_score_text(flat.get(f"{c}_score"), flat.get(f"{c}_feedback", ""))
+        result[c] = {"score": score, "feedback": feedback}
+    score, summary = _clean_score_text(flat.get("overall_score"), flat.get("overall_summary", ""))
+    result["overall"] = {"score": score, "summary": summary}
+    return result
+
+
 def score_document(system_prompt: str, doc_content: str, model: str = MODEL) -> dict:
     """
     Call the model with a forced tool call and return the structured result dict.
 
-    Because the evaluation comes back as `tool_use.input` — already parsed by the
-    SDK — there is no JSON-in-text step to fail. This replaces the earlier
-    text-parsing approach, which could error when the model emitted unescaped
-    double quotes inside a feedback string.
+    The evaluation comes back as `tool_use.input` — already parsed by the SDK — so
+    there is no JSON-in-text step to fail (which fixed the earlier unescaped-quote
+    parse errors). The tool schema is flat; this reassembles it into the nested
+    {criterion: {score, feedback}} shape the rest of the code expects.
     """
     client = anthropic.Anthropic()
     message = client.messages.create(
@@ -299,7 +353,7 @@ def score_document(system_prompt: str, doc_content: str, model: str = MODEL) -> 
     )
     for block in message.content:
         if getattr(block, "type", None) == "tool_use" and block.name == RESULT_TOOL["name"]:
-            return dict(block.input)
+            return _nest_result(dict(block.input))
     raise ValueError("Model did not return a submit_evaluation tool call.")
 
 
