@@ -23,7 +23,6 @@ Prerequisites:
 from dotenv import load_dotenv
 import anthropic
 import chromadb
-import json
 import re
 import frontmatter
 
@@ -40,6 +39,57 @@ MODEL           = "claude-haiku-4-5-20251001"
 # Criteria returned by the evaluator, in display order. "overall" is handled
 # separately because its payload is {score, summary} rather than {score, feedback}.
 CRITERIA = ["clarity", "completeness", "accuracy", "consistency", "structure"]
+
+
+# ── Structured-output tool schema ────────────────────────────────────────────
+#
+# The model returns its evaluation by calling this tool rather than emitting JSON
+# as text. The SDK hands back `tool_use.input` as an already-parsed dict, so there
+# is no text-to-JSON step that can fail — this eliminates the class of parse errors
+# caused by unescaped quotes inside feedback strings.
+
+def _criterion_schema(name: str) -> dict:
+    return {
+        "type": "object",
+        "properties": {
+            "score": {
+                "type": "integer", "minimum": 1, "maximum": 5,
+                "description": f"{name.capitalize()} score from 1 (poor) to 5 (excellent).",
+            },
+            "feedback": {
+                "type": "string",
+                "description": "One sentence of specific, actionable feedback.",
+            },
+        },
+        "required": ["score", "feedback"],
+    }
+
+
+RESULT_TOOL = {
+    "name": "submit_evaluation",
+    "description": "Submit the documentation quality scores and feedback for each criterion.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            **{c: _criterion_schema(c) for c in CRITERIA},
+            "overall": {
+                "type": "object",
+                "properties": {
+                    "score": {
+                        "type": "number", "minimum": 1, "maximum": 5,
+                        "description": "Overall quality score from 1 to 5.",
+                    },
+                    "summary": {
+                        "type": "string",
+                        "description": "A short overall summary of the evaluation.",
+                    },
+                },
+                "required": ["score", "summary"],
+            },
+        },
+        "required": [*CRITERIA, "overall"],
+    },
+}
 
 
 # ── MDX preprocessing ────────────────────────────────────────────────────────
@@ -220,51 +270,37 @@ Criteria:
 5. STRUCTURE — Does the content follow the appropriate Diátaxis type
    (tutorial / how-to / reference / explanation / overview)?
 
-Return your response as JSON only. Do not include any explanation, preamble,
-or markdown code fences — raw JSON only, in this exact format:
-{{
-  "clarity":      {{"score": 0, "feedback": ""}},
-  "completeness": {{"score": 0, "feedback": ""}},
-  "accuracy":     {{"score": 0, "feedback": ""}},
-  "consistency":  {{"score": 0, "feedback": ""}},
-  "structure":    {{"score": 0, "feedback": ""}},
-  "overall":      {{"score": 0, "summary": ""}}
-}}
+Provide your assessment by calling the `submit_evaluation` tool. For each of the
+five criteria, give an integer score from 1–5 and one sentence of specific,
+actionable feedback; also give an overall score and a short summary. Respond only
+through the tool — do not write any prose in your reply.
 """
 
 
-# ── Model call and parsing ───────────────────────────────────────────────────
+# ── Model call (structured output) ───────────────────────────────────────────
 
-def call_model(system_prompt: str, doc_content: str, model: str = MODEL) -> str:
-    """Call the Anthropic API and return the raw response text."""
+def score_document(system_prompt: str, doc_content: str, model: str = MODEL) -> dict:
+    """
+    Call the model with a forced tool call and return the structured result dict.
+
+    Because the evaluation comes back as `tool_use.input` — already parsed by the
+    SDK — there is no JSON-in-text step to fail. This replaces the earlier
+    text-parsing approach, which could error when the model emitted unescaped
+    double quotes inside a feedback string.
+    """
     client = anthropic.Anthropic()
     message = client.messages.create(
         model=model,
         max_tokens=2048,
         system=system_prompt,
+        tools=[RESULT_TOOL],
+        tool_choice={"type": "tool", "name": RESULT_TOOL["name"]},
         messages=[{"role": "user", "content": doc_content}],
     )
-    return message.content[0].text
-
-
-def parse_result(raw: str) -> dict:
-    """
-    Parse the model's raw response into a result dict.
-
-    Tolerates markdown code fences and surrounding text. Raises ValueError if no
-    valid JSON object can be recovered.
-    """
-    clean = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-    try:
-        return json.loads(clean)
-    except json.JSONDecodeError:
-        match = re.search(r'\{.*\}', clean, re.DOTALL)
-        if match:
-            try:
-                return json.loads(match.group())
-            except json.JSONDecodeError:
-                pass
-    raise ValueError(f"Could not parse a JSON object from the model response:\n{raw}")
+    for block in message.content:
+        if getattr(block, "type", None) == "tool_use" and block.name == RESULT_TOOL["name"]:
+            return dict(block.input)
+    raise ValueError("Model did not return a submit_evaluation tool call.")
 
 
 # ── Convenience entry point ──────────────────────────────────────────────────
@@ -284,5 +320,4 @@ def evaluate_document(doc_path: str, collection=None, top_k: int = TOP_K) -> dic
         collection = get_collection()
     retrieved = retrieve_guidelines(collection, content, doc_type, top_k)
     system_prompt = build_system_prompt(format_guidelines(retrieved), doc_type)
-    raw = call_model(system_prompt, content)
-    return parse_result(raw)
+    return score_document(system_prompt, content)
