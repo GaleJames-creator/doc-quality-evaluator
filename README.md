@@ -322,13 +322,25 @@ That is all that is required — the workflow triggers itself on the next pull r
 
 The workflow is configured through environment variables in the `Evaluate changed docs` step:
 
-| Variable | Default | Purpose |
-|---|---|---|
-| `DOC_QUALITY_THRESHOLD` | `3` | Minimum acceptable `overall` score (1–5). Docs scoring below this fail the check. |
-| `DOC_PATHS` | `samples` | Directory holding the docs under evaluation. |
-| `ANTHROPIC_API_KEY` | — | Supplied from the repository secret; required for the model call. |
+| Variable                | Default   | Purpose                                                                           |
+|-------------------------|-----------|-----------------------------------------------------------------------------------|
+| `DOC_QUALITY_THRESHOLD` | `3`.      | Minimum acceptable `overall` score (1–5). Docs scoring below this fail the check. |
+| `DOC_PATHS`             | `samples` | Directory holding the docs under evaluation.                                      |
+| `ANTHROPIC_API_KEY`     | —         | Supplied from the repository secret; required for the model call.                 |
 
 Cost is bounded because only the documentation files changed in the pull request are evaluated, using the low-cost `claude-haiku-4-5` model.
+
+### Skipping non-API docs
+
+The evaluator reviews documents against API- and developer-documentation standards, so pages that aren't API docs — portfolio overviews, process memos, changelogs — can score poorly and wrongly fail the gate. To exclude a file, add `skip-evaluation: true` to its frontmatter:
+
+```yaml
+---
+skip-evaluation: true
+---
+```
+
+The CI runner skips any doc flagged this way: it isn't scored, doesn't count toward the pass/fail gate, and is listed in the PR comment under a short "Skipped" note so the exclusion is visible. If a pull request changes only skipped docs, the check passes with no comment. (The interactive CLI, `evaluate_rag.py`, ignores the flag and evaluates whatever file you explicitly give it.)
 
 ### Running the CI check locally
 
@@ -337,9 +349,11 @@ Cost is bounded because only the documentation files changed in the pull request
 ```text
 python3 ci/evaluate_changed.py                 # evaluate every doc under DOC_PATHS
 python3 ci/evaluate_changed.py samples/my-doc.mdx   # evaluate specific files
+python3 ci/evaluate_changed.py -v              # feedback for every doc
+python3 ci/evaluate_changed.py -q              # score table only
 ```
 
-It writes the same Markdown report to `ci_report.md` and exits non-zero when a doc is below the threshold.
+It prints an aligned score table to the terminal and writes the same Markdown report to `ci_report.md` (the source of the PR comment), and it exits non-zero when a doc is below the threshold. By default the console shows the table plus feedback for failing docs only; `-v`/`--verbose` shows feedback for every doc, and `-q`/`--quiet` shows just the table. These flags affect the console output only — the Markdown report and PR comment always include the full feedback.
 
 ## Output reference
 
@@ -501,6 +515,8 @@ Structure each file with `##` headers &mdash; `build_index.py` splits files on l
 
 `build_index.py` also tags the type-defining sections across the knowledge base with metadata, matched by exact header text. The four Diátaxis type sections plus `## Overview / Index Pages` live in `diataxis_types.md`; `## Integration Guide Standards` lives in `api_doc_standards.md`.
 
+> **Important**: If you rename or restructure these headers in `diataxis_types.md` or `api_doc_standards.md`, update `DOCTYPE_HEADERS` in `build_index.py` to match. A mismatch fails silently &mdash; retrieval falls back to similarity-only ranking for that type instead of raising an error.
+
 ```python
 DOCTYPE_HEADERS = {
     "## Tutorials": "tutorial",
@@ -511,8 +527,6 @@ DOCTYPE_HEADERS = {
     "## Integration Guide Standards": "integration-guide",
 }
 ```
-
-> **Important**: If you rename or restructure these headers in `diataxis_types.md` or `api_doc_standards.md`, update `DOCTYPE_HEADERS` in `build_index.py` to match. A mismatch fails silently &mdash; retrieval falls back to similarity-only ranking for that type instead of raising an error.
 
 > **Important**: Re-run `python3 build_index.py` after adding or updating knowledge base files. The vector index does not update automatically.
 
@@ -671,6 +685,10 @@ A zero (`0`) in the evaluation score indicates something went wrong with the eva
 
 ### July 2026
 
+* Improved the CI runner's console output: an aligned, fixed-width score table (instead of raw Markdown pipes), with per-criterion feedback shown under it. By default feedback appears only for docs that fail the gate; `-v`/`--verbose` shows it for every doc and `-q`/`--quiet` shows the table alone. Console formatting is independent of the Markdown report used for the PR comment. Also recovers gracefully when the model misfiles a feedback sentence into a score field.
+* Flattened the evaluation tool schema to top-level scalar fields (`clarity_score`, `clarity_feedback`, … `overall_score`, `overall_summary`) instead of nested `{score, feedback}` objects. Haiku reliably fills flat integer/string fields but frequently mangled the nested inner fields (leaking tool-call syntax into values), producing false failures on a majority of docs in a batch run. `score_document` reassembles the flat fields into the nested shape the rest of the code uses, so callers are unaffected.
+* Hardened the CI report renderer against malformed model output. Although the evaluator requests a structured `{score, feedback}` object per criterion, the model can occasionally return a bare string or number; the renderer now tolerates that (showing `?` for a missing score and keeping any stray text as feedback) instead of crashing the run. A malformed `overall` safely gates to a failure rather than passing silently.
+* Added a `skip-evaluation: true` frontmatter flag so non-API docs (portfolio overviews, process memos, changelogs) can opt out of scoring. The CI runner skips flagged files — they aren't scored, don't count toward the gate, and are noted in the PR comment. Prevents false failures from judging non-API pages against the API-reference rubric.
 * Switched the RAG evaluator to structured tool-use output. `evaluate_rag.py`, `evaluate_core.py`, and the CI runner now receive the evaluation as a forced `submit_evaluation` tool call, so the SDK returns an already-parsed object instead of JSON embedded in text. This eliminates the nondeterministic `JSON parse error` failures caused by unescaped double quotes inside feedback strings (e.g., a doc scoring 4.6 that errored on a `("winner")` quote). No new dependency required.
 * Added continuous integration via a GitHub Action (`.github/workflows/doc-quality.yml` and `ci/evaluate_changed.py`). On each pull request it scores the changed documentation files, posts a sticky comment with a per-file score table and per-criterion feedback, and fails the check when any doc scores below a configurable `DOC_QUALITY_THRESHOLD` (default `3`). See [Continuous integration](#continuous-integration).
 * Extracted the shared evaluation logic into `evaluate_core.py`, imported by both `evaluate_rag.py` (CLI) and the CI runner, so the two share a single source of truth. `evaluate_rag.py` is now a thin command-line wrapper with unchanged behavior and output.
