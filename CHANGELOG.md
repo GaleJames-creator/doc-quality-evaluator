@@ -41,6 +41,8 @@
 
 ### Fixed
 
+* **Taught the CI runner to see YAML.** `ci/evaluate_changed.py` still matched `.md` and `.mdx` only, so a changed OpenAPI specification was never scored on a pull request even though the batch runner scored it and the documentation claimed both did. Found while opening the first pull request after adding YAML support: the gate would have passed by finding nothing to evaluate. A YAML discovered from a diff that isn't a specification is skipped with a reason rather than failing the check, matching the batch runner.
+
 * **Corrected the Python requirement from "Python 3.x" to 3.10 or later.** The batch runner, report renderer, and CI runner use `X | None` annotations that raise a `TypeError` at import on 3.9. Added a troubleshooting entry for that error.
 
 * **Corrected the claim that `build_index.py` is needed for `RAG-enhanced` evaluation only.** The batch and CI runners require the index too; only the `baseline` evaluator runs without it. The setup step and the `Collection 'doc_guidelines' not found` entry both said otherwise.
