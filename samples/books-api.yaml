@@ -1,0 +1,123 @@
+openapi: 3.0.3
+info:
+  title: Books API
+  version: 1.0.0
+  description: >
+    Manage the bookstore catalog. All endpoints require a bearer token and
+    return JSON. Rate limit: 100 requests per minute per token.
+servers:
+  - url: https://api.example.com/v1
+paths:
+  /books:
+    get:
+      summary: List books
+      description: Returns a paginated list of books in the catalog.
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of books to return (1-100). Default 20.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          description: Opaque pagination cursor from a previous response.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A page of books.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Book'
+                  nextCursor:
+                    type: string
+                    description: Cursor for the next page, absent on the last page.
+        '401':
+          description: Missing or invalid bearer token.
+        '429':
+          description: Rate limit exceeded. Retry after the interval in the Retry-After header.
+    post:
+      summary: Add a book
+      description: Adds a new book to the catalog.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewBook'
+            example:
+              title: The Pragmatic Programmer
+              author: David Thomas
+              isbn: 978-0135957059
+      responses:
+        '201':
+          description: The created book.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '400':
+          description: Validation failed. The response body lists the invalid fields.
+        '401':
+          description: Missing or invalid bearer token.
+  /books/{bookId}:
+    get:
+      summary: Get a book
+      description: Returns a single book by its identifier.
+      parameters:
+        - name: bookId
+          in: path
+          required: true
+          description: Unique identifier of the book.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The requested book.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Book'
+        '404':
+          description: No book exists with the given bookId.
+        '410':
+          description: The book was removed from the catalog.
+components:
+  schemas:
+    Book:
+      type: object
+      properties:
+        bookId:
+          type: string
+          description: Unique identifier of the book.
+        title:
+          type: string
+        author:
+          type: string
+        isbn:
+          type: string
+          description: ISBN-13 of the book.
+        createdDate:
+          type: string
+          format: date-time
+          description: When the book was added to the catalog.
+    NewBook:
+      type: object
+      required: [title, author]
+      properties:
+        title:
+          type: string
+        author:
+          type: string
+        isbn:
+          type: string
+          description: ISBN-13 of the book.

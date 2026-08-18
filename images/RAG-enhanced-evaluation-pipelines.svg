@@ -1,0 +1,85 @@
+<svg viewBox="0 0 2004 480" width="2004" height="480" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ttl desc">
+<title id="ttl">RAG-enhanced evaluation pipelines</title>
+<desc id="desc">Two lanes showing the RAG-enhanced evaluation flow for Markdown and MDX files. The file is read first, then guidelines are retrieved from the knowledge base and injected into the prompt; the model returns a parsed object via a submit_evaluation tool call.</desc>
+<defs><marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+<path d="M0 0 L10 5 L0 10 z" fill="#5c5c5c"/></marker></defs>
+<style>
+.t{font:500 15px ui-sans-serif,system-ui,-apple-system,sans-serif;fill:#1a1a1a}
+.s{font:13px ui-sans-serif,system-ui,-apple-system,sans-serif;fill:#5c5c5c}
+.chip{font:600 12px ui-sans-serif,system-ui,-apple-system,sans-serif;fill:#fff;letter-spacing:.03em}
+.ln{stroke:#5c5c5c;stroke-width:1.6;fill:none;marker-end:url(#arw)}
+</style>
+<rect width="2004" height="480" fill="#ffffff"/>
+<rect x="28" y="56" width="1948" height="176" rx="6" fill="none" stroke="#1a1a1a" stroke-width="2.4"/>
+<rect x="42" y="43" width="377" height="26" rx="5" fill="#1a1a1a"/>
+<text x="48" y="60" class="chip">RAG-ENHANCED MARKDOWN EVALUATION PIPELINE</text>
+<rect x="64" y="92" width="196" height="104" rx="9" fill="#fbe4f3" stroke="#c9539f" stroke-width="1.8"/>
+<text x="162" y="140" class="t" text-anchor="middle">User provides</text>
+<text x="162" y="158" class="s" text-anchor="middle">.md file</text>
+<path class="ln" d="M266 144 H300"/>
+<rect x="304" y="92" width="196" height="104" rx="9" fill="#fbe4f3" stroke="#c9539f" stroke-width="1.8"/>
+<text x="402" y="140" class="t" text-anchor="middle">evaluate_rag.py</text>
+<text x="402" y="158" class="s" text-anchor="middle">reads the file</text>
+<path class="ln" d="M506 144 H540"/>
+<rect x="544" y="92" width="196" height="104" rx="9" fill="#fbe4f3" stroke="#c9539f" stroke-width="1.8"/>
+<text x="642" y="130" class="t" text-anchor="middle">Retrieve guidelines</text>
+<text x="642" y="149" class="s" text-anchor="middle">from knowledge_base</text>
+<text x="642" y="168" class="s" text-anchor="middle">+ guaranteed docType</text>
+<path class="ln" d="M746 144 H780"/>
+<rect x="784" y="92" width="196" height="104" rx="9" fill="#fbe4f3" stroke="#c9539f" stroke-width="1.8"/>
+<text x="882" y="130" class="t" text-anchor="middle">Anthropic API call</text>
+<text x="882" y="149" class="s" text-anchor="middle">(prompt + retrieved</text>
+<text x="882" y="168" class="s" text-anchor="middle">guidelines)</text>
+<path class="ln" d="M986 144 H1020"/>
+<rect x="1024" y="92" width="196" height="104" rx="9" fill="#fbe4f3" stroke="#c9539f" stroke-width="1.8"/>
+<text x="1122" y="130" class="t" text-anchor="middle">Model evaluates</text>
+<text x="1122" y="149" class="s" text-anchor="middle">against 5 criteria</text>
+<text x="1122" y="168" class="s" text-anchor="middle">(1–5 scale)</text>
+<path class="ln" d="M1226 144 H1260"/>
+<rect x="1264" y="92" width="196" height="104" rx="9" fill="#fbe4f3" stroke="#c9539f" stroke-width="1.8"/>
+<text x="1362" y="130" class="t" text-anchor="middle">submit_evaluation</text>
+<text x="1362" y="149" class="s" text-anchor="middle">tool call returns</text>
+<text x="1362" y="168" class="s" text-anchor="middle">a parsed object</text>
+<path class="ln" d="M1466 144 H1500"/>
+<rect x="1504" y="92" width="196" height="104" rx="9" fill="#fbe4f3" stroke="#c9539f" stroke-width="1.8"/>
+<text x="1602" y="140" class="t" text-anchor="middle">Results printed</text>
+<text x="1602" y="158" class="s" text-anchor="middle">to terminal</text>
+<rect x="28" y="294" width="1948" height="176" rx="6" fill="none" stroke="#1a1a1a" stroke-width="2.4"/>
+<rect x="42" y="281" width="334" height="26" rx="5" fill="#1a1a1a"/>
+<text x="48" y="298" class="chip">RAG-ENHANCED MDX EVALUATION PIPELINE</text>
+<rect x="64" y="330" width="196" height="104" rx="9" fill="#fbe4f3" stroke="#c9539f" stroke-width="1.8"/>
+<text x="162" y="378" class="t" text-anchor="middle">User provides</text>
+<text x="162" y="396" class="s" text-anchor="middle">.mdx file</text>
+<path class="ln" d="M266 382 H300"/>
+<rect x="304" y="330" width="196" height="104" rx="9" fill="#fbe4f3" stroke="#c9539f" stroke-width="1.8"/>
+<text x="402" y="378" class="t" text-anchor="middle">evaluate_rag.py</text>
+<text x="402" y="396" class="s" text-anchor="middle">reads the file</text>
+<path class="ln" d="M506 382 H540"/>
+<rect x="544" y="330" width="196" height="104" rx="9" fill="#fbe4f3" stroke="#c9539f" stroke-width="1.8"/>
+<text x="642" y="378" class="t" text-anchor="middle">Strip MDX syntax</text>
+<text x="642" y="396" class="s" text-anchor="middle">before evaluation</text>
+<path class="ln" d="M746 382 H780"/>
+<rect x="784" y="330" width="196" height="104" rx="9" fill="#fbe4f3" stroke="#c9539f" stroke-width="1.8"/>
+<text x="882" y="368" class="t" text-anchor="middle">Retrieve guidelines</text>
+<text x="882" y="387" class="s" text-anchor="middle">from knowledge_base</text>
+<text x="882" y="406" class="s" text-anchor="middle">+ guaranteed docType</text>
+<path class="ln" d="M986 382 H1020"/>
+<rect x="1024" y="330" width="196" height="104" rx="9" fill="#fbe4f3" stroke="#c9539f" stroke-width="1.8"/>
+<text x="1122" y="368" class="t" text-anchor="middle">Anthropic API call</text>
+<text x="1122" y="387" class="s" text-anchor="middle">(prompt + retrieved</text>
+<text x="1122" y="406" class="s" text-anchor="middle">guidelines)</text>
+<path class="ln" d="M1226 382 H1260"/>
+<rect x="1264" y="330" width="196" height="104" rx="9" fill="#fbe4f3" stroke="#c9539f" stroke-width="1.8"/>
+<text x="1362" y="368" class="t" text-anchor="middle">Model evaluates</text>
+<text x="1362" y="387" class="s" text-anchor="middle">against 5 criteria</text>
+<text x="1362" y="406" class="s" text-anchor="middle">(1–5 scale)</text>
+<path class="ln" d="M1466 382 H1500"/>
+<rect x="1504" y="330" width="196" height="104" rx="9" fill="#fbe4f3" stroke="#c9539f" stroke-width="1.8"/>
+<text x="1602" y="368" class="t" text-anchor="middle">submit_evaluation</text>
+<text x="1602" y="387" class="s" text-anchor="middle">tool call returns</text>
+<text x="1602" y="406" class="s" text-anchor="middle">a parsed object</text>
+<path class="ln" d="M1706 382 H1740"/>
+<rect x="1744" y="330" width="196" height="104" rx="9" fill="#fbe4f3" stroke="#c9539f" stroke-width="1.8"/>
+<text x="1842" y="378" class="t" text-anchor="middle">Results printed</text>
+<text x="1842" y="396" class="s" text-anchor="middle">to terminal</text>
+</svg>

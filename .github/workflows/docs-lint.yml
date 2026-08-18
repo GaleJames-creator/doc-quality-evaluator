@@ -1,0 +1,76 @@
+name: Docs lint
+
+# Proofreading and structural checks for the documentation. Runs on any pull
+# request that touches Markdown, needs no API key, and finishes in seconds.
+#
+# Separate from the Doc quality workflow on purpose: that one scores writing
+# quality with the model and costs money to run; this one catches mechanical
+# defects — typos, repeated words, broken links — and is free.
+
+on:
+  push:
+    branches: [main]
+    paths: &doc_paths
+      - "**/*.md"
+      - ".codespellrc"
+      - ".github/mlc_config.json"
+      - "tools/check_docs.py"
+      - ".github/workflows/docs-lint.yml"
+  pull_request:
+    paths: *doc_paths
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out PR
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install codespell
+        run: pip install codespell
+
+      - name: Spell check
+        # Reads .codespellrc for the skip list. Invoked through -m so the check
+        # doesn't depend on pip's console-script directory being on PATH.
+        run: python -m codespell_lib
+
+      - name: Structural and editorial checks
+        # Repeated words, decapitalized sentence starts, broken relative links,
+        # missing anchors, and raw dashes where house style wants an entity.
+        run: python tools/check_docs.py
+
+  links:
+    # Separate job so a link failure and a prose failure are distinguishable at
+    # a glance, and so a slow external host can't delay the fast checks.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out PR
+        uses: actions/checkout@v4
+
+      - name: Check links
+        # The file set matches tools/check_docs.py: samples/ holds evaluation
+        # inputs copied from other repositories, whose relative links resolve
+        # there and not here, and the saved reports are verbatim evaluator
+        # output containing site paths from the documentation set that was
+        # scored. Neither is documentation under review.
+        run: |
+          files=$(find . -name '*.md' \
+            -not -path './.git/*' \
+            -not -path './node_modules/*' \
+            -not -path './samples/*' \
+            -not -name 'sample_*_report.md' \
+            -not -name 'ci_report.md' \
+            -not -name 'batch_report.md')
+          status=0
+          for f in $files; do
+            npx --yes markdown-link-check --quiet --config .github/mlc_config.json "$f" || status=1
+          done
+          exit $status

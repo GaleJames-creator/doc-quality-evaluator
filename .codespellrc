@@ -1,0 +1,11 @@
+[codespell]
+# Patterns are globs matched against the whole path, so they work no matter
+# which directory codespell runs from or which tree it is pointed at. Relative
+# forms such as ./node_modules silently fail to match when the target is
+# outside the current directory.
+#
+# Skipped here: dependency and build directories, binary or generated content,
+# and verbatim evaluator output, which records what the model actually returned
+# and must not be edited to satisfy a linter.
+skip = */.git/*,*/node_modules/*,*/__pycache__/*,*/chroma_db/*,*/images/*,*/txt_samples/*,*/json_samples/*,*/samples/*.md,*/samples/*.mdx,*/samples/*.yaml,*package-lock.json,*sample_ci_report.md,*sample_batch_report.md,*ci_report.md,*batch_report.md
+quiet-level = 3

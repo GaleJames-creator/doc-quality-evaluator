@@ -1,0 +1,61 @@
+<svg viewBox="0 0 1560 560" width="1560" height="560" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="ttl desc">
+<title id="ttl">Batch evaluation pipeline</title>
+<desc id="desc">Files and folders are collected, then every file is classified as evaluate, skip, or error before any API call. Only evaluable files reach the model. Results are rendered as a console table and an optional Markdown report, with an exit code that gates scripts.</desc>
+<defs><marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+<path d="M0 0 L10 5 L0 10 z" fill="#5c5c5c"/></marker></defs>
+<style>
+.t{font:500 15px ui-sans-serif,system-ui,-apple-system,sans-serif;fill:#1a1a1a}
+.s{font:13px ui-sans-serif,system-ui,-apple-system,sans-serif;fill:#5c5c5c}
+.chip{font:600 12px ui-sans-serif,system-ui,-apple-system,sans-serif;fill:#fff;letter-spacing:.03em}
+.ln{stroke:#5c5c5c;stroke-width:1.6;fill:none;marker-end:url(#arw)}
+</style>
+<rect width="1560" height="560" fill="#ffffff"/>
+<rect x="28" y="56" width="1504" height="464" rx="6" fill="none" stroke="#1a1a1a" stroke-width="2.4"/>
+<rect x="42" y="43" width="411" height="26" rx="5" fill="#1a1a1a"/>
+<text x="48" y="60" class="chip">BATCH EVALUATION PIPELINE (evaluate_batch.py)</text>
+<rect x="64" y="236" width="176" height="96" rx="9" fill="#e3f2e8" stroke="#3f8f5f" stroke-width="1.8"/>
+<text x="152" y="280" class="t" text-anchor="middle">Files and folders</text>
+<text x="152" y="298" class="s" text-anchor="middle">passed as arguments</text>
+<path class="ln" d="M246 284 H292"/>
+<rect x="296" y="224" width="200" height="120" rx="9" fill="#e3f2e8" stroke="#3f8f5f" stroke-width="1.8"/>
+<text x="396" y="260" class="t" text-anchor="middle">collect_docs()</text>
+<text x="396" y="280" class="s" text-anchor="middle">expands folders,</text>
+<text x="396" y="298" class="s" text-anchor="middle">skips node_modules</text>
+<text x="396" y="318" class="s" text-anchor="middle">and dot-directories</text>
+<path class="ln" d="M502 284 H548"/>
+<rect x="552" y="224" width="200" height="120" rx="9" fill="#e3f2e8" stroke="#3f8f5f" stroke-width="1.8"/>
+<text x="652" y="270" class="t" text-anchor="middle">classify_documents()</text>
+<text x="652" y="289" class="s" text-anchor="middle">sorts every file</text>
+<text x="652" y="308" class="s" text-anchor="middle">before any API call</text>
+<path class="ln" d="M758 256 C806 256 806 150 850 150"/>
+<path class="ln" d="M758 284 H846"/>
+<path class="ln" d="M758 312 C806 312 806 418 850 418"/>
+<rect x="852" y="110" width="208" height="80" rx="9" fill="#f2f1ee" stroke="#9c9890" stroke-width="1.8"/>
+<text x="956" y="146" class="t" text-anchor="middle">Skip</text>
+<text x="956" y="164" class="s" text-anchor="middle">with a reason</text>
+<rect x="852" y="244" width="208" height="80" rx="9" fill="#e3f2e8" stroke="#3f8f5f" stroke-width="1.8"/>
+<text x="956" y="280" class="t" text-anchor="middle">Evaluate</text>
+<text x="956" y="298" class="s" text-anchor="middle">one file at a time</text>
+<rect x="852" y="378" width="208" height="80" rx="9" fill="#f2f1ee" stroke="#9c9890" stroke-width="1.8"/>
+<text x="956" y="414" class="t" text-anchor="middle">Error</text>
+<text x="956" y="432" class="s" text-anchor="middle">the run continues</text>
+<path class="ln" d="M1064 284 H1110"/>
+<rect x="1114" y="224" width="200" height="120" rx="9" fill="#e3f2e8" stroke="#3f8f5f" stroke-width="1.8"/>
+<text x="1214" y="270" class="t" text-anchor="middle">evaluate_core</text>
+<text x="1214" y="289" class="s" text-anchor="middle">read, retrieve,</text>
+<text x="1214" y="308" class="s" text-anchor="middle">submit_evaluation</text>
+<path class="ln" d="M1320 284 H1366"/>
+<rect x="1370" y="224" width="160" height="120" rx="9" fill="#e3f2e8" stroke="#3f8f5f" stroke-width="1.8"/>
+<text x="1450" y="260" class="t" text-anchor="middle">report.py</text>
+<text x="1450" y="280" class="s" text-anchor="middle">console table,</text>
+<text x="1450" y="298" class="s" text-anchor="middle">optional Markdown,</text>
+<text x="1450" y="318" class="s" text-anchor="middle">exit 0 or 1</text>
+<text x="1076" y="140" class="s">skip-evaluation</text>
+<text x="1076" y="160" class="s">no evaluable content</text>
+<text x="1076" y="180" class="s">not an OpenAPI spec</text>
+<path class="ln" d="M652 348 V416"/>
+<rect x="524" y="420" width="256" height="80" rx="9" fill="#f2f1ee" stroke="#9c9890" stroke-width="1.8"/>
+<text x="652" y="446" class="t" text-anchor="middle">--dry-run stops here</text>
+<text x="652" y="465" class="s" text-anchor="middle">lists every disposition,</text>
+<text x="652" y="484" class="s" text-anchor="middle">exits before any API call</text>
+</svg>
