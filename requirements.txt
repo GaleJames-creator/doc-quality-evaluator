@@ -2,3 +2,7 @@ anthropic
 python-dotenv
 chromadb
 python-frontmatter
+PyYAML
+
+# Documentation linting only; not needed to run an evaluation.
+codespell

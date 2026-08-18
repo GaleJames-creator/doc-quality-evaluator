@@ -1,0 +1,33 @@
+# Exclusion patterns for evaluate_batch.py.
+#
+# One glob per line. Patterns match the path relative to the folder you point
+# the runner at, and the bare filename, so `README.md` matches at any depth.
+# A trailing slash excludes a directory and everything under it.
+#
+# Use this file for documents whose frontmatter would be visible to readers:
+# GitHub renders frontmatter in .md files as a table. Use `skip-evaluation: true`
+# frontmatter instead for pages inside a docs site, where the generator consumes
+# it. See "Excluding files" in README.md.
+
+# Repository meta files, not API documentation
+README.md
+CONTRIBUTING.md
+
+# Release history, not documentation under review. A changelog scored against
+# an API-reference rubric is the textbook false positive; remove this line if
+# you want to see that for yourself.
+CHANGELOG.md
+
+# Note: docs/ is deliberately NOT excluded. Those pages document a tool rather
+# than an API, so they take some false completeness and structure hits, but
+# running the evaluator against its own documentation is the honest test.
+
+# Guideline source text, indexed by build_index.py rather than evaluated
+knowledge_base/
+
+# Saved evaluator output, not documentation under review
+report_samples/
+
+# Generated reports: the evaluator should not score its own output
+ci_report.md
+batch_report.md

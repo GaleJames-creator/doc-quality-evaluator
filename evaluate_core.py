@@ -25,6 +25,7 @@ import anthropic
 import chromadb
 import re
 import frontmatter
+import yaml  # PyYAML — direct dependency for OpenAPI spec loading
 
 load_dotenv()
 
@@ -124,16 +125,58 @@ def strip_mdx(content: str) -> str:
 
 # ── Load a document ──────────────────────────────────────────────────────────
 
+YAML_EXTS = (".yaml", ".yml")
+
+
+def is_openapi_path(doc_path: str) -> bool:
+    """Return True if the path is a YAML file (evaluated as an OpenAPI spec)."""
+    return doc_path.endswith(YAML_EXTS)
+
+
+def _load_yaml_spec(doc_path: str):
+    """
+    Load a YAML file for evaluation, returning (doc_content, doc_type).
+
+    The raw YAML text is what gets evaluated (so feedback can reference the
+    actual `summary`, `description`, and example fields the writer sees), but
+    the file is parsed first to fail fast on invalid YAML and to confirm it is
+    an OpenAPI/Swagger spec. Specs are graded as docType `reference` — the
+    Diátaxis type whose checklist covers parameters, responses, and error codes.
+
+    Raises ValueError if the file is not parseable YAML or has no
+    `openapi`/`swagger` version key.
+    """
+    with open(doc_path, encoding="utf-8") as f:
+        raw = f.read()
+
+    try:
+        parsed = yaml.safe_load(raw)
+    except yaml.YAMLError as exc:
+        raise ValueError(f"Not parseable YAML: {exc}") from exc
+
+    if not isinstance(parsed, dict) or not ({"openapi", "swagger"} & parsed.keys()):
+        raise ValueError(
+            "YAML file has no `openapi` or `swagger` key — only OpenAPI/Swagger "
+            "specs are supported for YAML evaluation."
+        )
+
+    return raw, "reference"
+
+
 def load_document(doc_path: str):
     """
-    Load a .md or .mdx file, returning (doc_content, doc_type).
+    Load a .md, .mdx, .yaml, or .yml file, returning (doc_content, doc_type).
 
-    doc_type comes from the frontmatter `docType` field (or None). MDX files
-    are run through strip_mdx so the evaluation reflects content quality rather
-    than JSX rendering.
+    For Markdown/MDX, doc_type comes from the frontmatter `docType` field (or
+    None). MDX files are run through strip_mdx so the evaluation reflects
+    content quality rather than JSX rendering. YAML files must be OpenAPI/
+    Swagger specs and are evaluated as docType `reference` (see _load_yaml_spec).
 
     Raises FileNotFoundError if the path does not exist.
     """
+    if is_openapi_path(doc_path):
+        return _load_yaml_spec(doc_path)
+
     post = frontmatter.load(doc_path)
     doc_type = post.metadata.get("docType")
 
@@ -152,9 +195,13 @@ def is_evaluation_skipped(doc_path: str) -> bool:
     A doc is skipped when its frontmatter sets `skip-evaluation: true`. This lets
     non-API pages — portfolio overviews, process memos, changelogs — avoid being
     graded against the API-reference rubric (and wrongly failing the CI gate).
-    Honored by the CI runner; the interactive CLI evaluates whatever file it is
-    explicitly given.
+    Honored by the CI and batch runners; the interactive CLI evaluates whatever
+    file it is explicitly given. YAML specs have no frontmatter and are never
+    skipped (frontmatter.load could misread a spec's leading `---` document
+    separator as a frontmatter fence, so they are excluded before parsing).
     """
+    if is_openapi_path(doc_path):
+        return False
     try:
         value = frontmatter.load(doc_path).metadata.get("skip-evaluation")
     except FileNotFoundError:
@@ -164,6 +211,51 @@ def is_evaluation_skipped(doc_path: str) -> bool:
     if isinstance(value, str):
         return value.strip().lower() in {"true", "yes", "1"}
     return bool(value)
+
+
+def classify_documents(paths: list[str], discovered_yaml=None):
+    """
+    Partition doc paths into (to_evaluate, skipped, errors) without calling
+    the API or opening the vector store.
+
+    skipped is a list of (path, reason) tuples; errors is (path, message).
+    A file is skipped for "skip-evaluation" frontmatter or for having no
+    evaluable content — e.g., a Mintlify spec-driven page whose body is only
+    frontmatter and component references, which strips to nothing. Sending
+    such a file to the model wastes a call and returns a confusing 400 error;
+    an intentionally content-free page is not a quality defect, so it does
+    not fail the gate.
+
+    discovered_yaml holds YAML paths found by folder recursion rather than
+    named by the caller. Docs repos routinely contain configuration YAML
+    (linter rulesets, CI workflows), so a discovered YAML that isn't an
+    OpenAPI spec is treated as "not a doc" and skipped rather than errored.
+    An explicitly named non-spec YAML still errors — the caller asked for
+    that file, so silently skipping it would hide a mistake. Other load
+    failures land in errors, which do fail the gate.
+    """
+    discovered_yaml = set(discovered_yaml or ())
+    to_evaluate, skipped, errors = [], [], []
+    for path in paths:
+        if is_evaluation_skipped(path):
+            skipped.append((path, "skip-evaluation"))
+            continue
+        try:
+            content, _ = load_document(path)
+        except ValueError as exc:
+            if path in discovered_yaml:
+                skipped.append((path, "not an OpenAPI spec"))
+            else:
+                errors.append((path, str(exc).splitlines()[0]))
+            continue
+        except Exception as exc:  # noqa: BLE001 — classify any failure per-file
+            errors.append((path, str(exc).splitlines()[0]))
+            continue
+        if not content.strip():
+            skipped.append((path, "no evaluable content"))
+            continue
+        to_evaluate.append(path)
+    return to_evaluate, skipped, errors
 
 
 # ── Vector store ─────────────────────────────────────────────────────────────
@@ -234,9 +326,20 @@ def format_guidelines(retrieved) -> str:
 
 # ── Prompt construction ──────────────────────────────────────────────────────
 
-def build_system_prompt(formatted_guidelines: str, doc_type) -> str:
+def build_system_prompt(formatted_guidelines: str, doc_type, is_openapi: bool = False) -> str:
     """Build the RAG-enhanced system prompt for the given docType."""
-    if doc_type == "integration-guide":
+    if is_openapi:
+        type_line = (
+            "The document is an OpenAPI (Swagger) specification in YAML, "
+            "evaluated as `docType: reference`. Grade the human-readable "
+            "content — `summary`, `description`, parameter and response "
+            "documentation, and examples — against the API reference "
+            "standards. Do not penalize Structure for YAML's spec-mandated "
+            "layout (`paths`, `components`, and so on); assess whether every "
+            "operation documents its parameters, responses, and error codes. "
+            "Do not re-classify the document yourself."
+        )
+    elif doc_type == "integration-guide":
         type_line = (
             "This document's frontmatter declares `docType: integration-guide` — "
             "a how-to guide that walks through implementing a feature. Score "
@@ -373,5 +476,7 @@ def evaluate_document(doc_path: str, collection=None, top_k: int = TOP_K) -> dic
     if collection is None:
         collection = get_collection()
     retrieved = retrieve_guidelines(collection, content, doc_type, top_k)
-    system_prompt = build_system_prompt(format_guidelines(retrieved), doc_type)
+    system_prompt = build_system_prompt(
+        format_guidelines(retrieved), doc_type, is_openapi=is_openapi_path(doc_path)
+    )
     return score_document(system_prompt, content)

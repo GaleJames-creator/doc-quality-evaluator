@@ -1,0 +1,19 @@
+{
+  "_comment": "Config for markdown-link-check. Both ignorePatterns entries were verified as reachable by hand before being added: the checker reports them dead because the hosts block automated requests, not because the links are broken. Mintlify returns 403 to the checker's user agent; claude.com refuses the connection outright (status 0). Do not add an entry here without first confirming in a browser that the link resolves.",
+  "ignorePatterns": [
+    { "pattern": "^https://galejames\\.mintlify\\.app" },
+    { "pattern": "^https://claude\\.com/" }
+  ],
+  "replacementPatterns": [],
+  "httpHeaders": [
+    {
+      "urls": ["https://github.com", "https://www.github.com"],
+      "headers": { "Accept": "text/html" }
+    }
+  ],
+  "timeout": "20s",
+  "retryOn429": true,
+  "retryCount": 3,
+  "fallbackRetryDelay": "30s",
+  "aliveStatusCodes": [200, 206]
+}
