@@ -1,6 +1,6 @@
 # Customization
 
-This page is optional. Read it only if you want to adapt the evaluator to your own documentation standards &mdash; by editing the system prompt, replacing the knowledge base, or changing which criteria the evaluator scores.
+This page is optional. Read it only if you want to adapt the evaluator to your own documentation standards&mdash;by editing the system prompt, replacing the knowledge base, or changing which criteria the evaluator scores.
 
 ## Prerequisites
 
@@ -144,11 +144,11 @@ The `RAG-enhanced` evaluator has a second customization point: the `knowledge_ba
 * Add product-specific documentation standards.
 * Replace `api_doc_standards.md` with standards for your own doc domain.
 
-Structure each file with `##` headers &mdash; `build_index.py` splits files on level-2 headers, and each section becomes a separate retrievable chunk.
+Structure each file with `##` headers&mdash;`build_index.py` splits files on level-2 headers, and each section becomes a separate retrievable chunk.
 
 `build_index.py` also tags the type-defining sections across the knowledge base with metadata, matched by exact header text. The four Diátaxis type sections plus `## Overview / Index Pages` live in `diataxis_types.md`; `## Integration Guide Standards` lives in `api_doc_standards.md`.
 
-> **Important**: If you rename or restructure these headers in `diataxis_types.md` or `api_doc_standards.md`, update `DOCTYPE_HEADERS` in `build_index.py` to match. A mismatch fails silently &mdash; retrieval falls back to similarity-only ranking for that type instead of raising an error.
+> **Important**: If you rename or restructure these headers in `diataxis_types.md` or `api_doc_standards.md`, update `DOCTYPE_HEADERS` in `build_index.py` to match. A mismatch fails silently&mdash;retrieval falls back to similarity-only ranking for that type instead of raising an error.
 
 ```python
 DOCTYPE_HEADERS = {

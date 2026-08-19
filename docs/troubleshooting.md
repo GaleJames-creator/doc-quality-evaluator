@@ -46,7 +46,7 @@ If the evaluator can’t parse the model’s response as JSON, it prints the par
 
 ## A score column shows `?`, or a criterion's feedback is empty
 
-The evaluator asks the model for an integer score and a feedback sentence per criterion. The model occasionally misfiles one into the other &mdash; putting the feedback sentence in the score field, or leaving the feedback empty. Rather than crashing the run, the renderer shows `?` in place of the missing score and keeps any stray text as that criterion's feedback. A `?` in the console table appears the same way in the Markdown report, both in the score column and as `**Structure (?/5):**` in the feedback block.
+The evaluator asks the model for an integer score and a feedback sentence per criterion. The model occasionally misfiles one into the other&mdash;putting the feedback sentence in the score field, or leaving the feedback empty. Rather than crashing the run, the renderer shows `?` in place of the missing score and keeps any stray text as that criterion's feedback. A `?` in the console table appears the same way in the Markdown report, both in the score column and as `**Structure (?/5):**` in the feedback block.
 
 This is a model-output glitch, not a problem with your document. The `overall` score is unaffected, so the pass/fail gate still works normally. Rerun the evaluation and the criterion usually scores normally.
 

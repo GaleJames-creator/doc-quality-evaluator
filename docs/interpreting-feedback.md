@@ -14,11 +14,11 @@ Scores are a starting point, not a verdict. Read evaluator output carefully and 
 
 ## What the evaluator reliably catches
 
-Most of this page is about feedback to discount, which understates what the tool is for. Its strongest results are internal contradictions between parts of a document that each read correctly on their own &mdash; the errors a human reviewer skims past because nothing in any single sentence looks wrong.
+Most of this page is about feedback to discount, which understates what the tool is for. Its strongest results are internal contradictions between parts of a document that each read correctly on their own&mdash;the errors a human reviewer skims past because nothing in any single sentence looks wrong.
 
 Two findings from a threshold-4 run over a published API documentation set, both confirmed and fixed:
 
-* **A specification that contradicted its own examples.** A data models page declared a `language` field as "ISO 639-1," while every example in the repository used `en-US` &mdash; a BCP 47 language tag, not an ISO 639-1 code. One wrong phrase invalidated roughly eighteen examples across the set. Correcting the specification validated all of them at once.
+* **A specification that contradicted its own examples.** A data models page declared a `language` field as "ISO 639-1," while every example in the repository used `en-US`&mdash;a BCP 47 language tag, not an ISO 639-1 code. One wrong phrase invalidated roughly eighteen examples across the set. Correcting the specification validated all of them at once.
 * **A request that couldn't produce its own response.** A pagination guide sent `limit: 100`, and the response beneath it showed `totalItems: 87` across `totalPages: 5`. Eighty-seven items at a hundred per page is one page, not five. The prose was clear, the JSON was valid, and the two halves were irreconcilable.
 
 Neither is a style question, and neither would surface in a spell check, a link check, or a lint pass. Both stem from reading a specification against the examples that implement it, which is exactly the comparison that gets skipped when a document is long and each part was written at a different time.
@@ -34,25 +34,25 @@ The evaluator does not know your document type, platform, or style guide. Watch 
 * **Snake_case Python variable names and camelCase JSON field names flagged as inconsistent**: These are correct conventions for their respective languages and contexts, not inconsistencies.
 * **Explicitly disclosed known inconsistencies flagged as documentation defects**: When docs transparently acknowledge a real product-level inconsistency (e.g., a schema noting specific fields use snake_case while the rest of the API uses camelCase, with a note that it will be fixed), the evaluator still penalizes the consistency score. Disclosing a known issue is correct documentation practice&mdash;the inconsistency lives in the product, not the docs. Confirmed recurring across three evaluation runs on the same finding.
 * **Flagging intentional style choices as grammar errors**: Technical writing conventions such as imperative voice and short sentences may trip up general grammar evaluation.
-* **Product-design feedback presented as documentation gaps**: The evaluator may recommend changing how the product works (for example, replacing an email-based token process with an automated endpoint). If the documentation accurately describes the product behavior, the docs are correct &mdash; disregard the feedback.
-* **Overview, index, and explanation (conceptual guide) pages flagged as incomplete reference documents**: Declaring the correct `docType` (see [Classifying documents with `docType`](supported-formats.md#classifying-documents-with-doctype)) now grounds the Structure and Completeness criteria in that type's own checklist via guaranteed retrieval, which substantially reduces this false positive. Residual risk remains when `docType` is omitted (the evaluator falls back to inferring type from content) or when a document links out to a reference page that doesn't actually cover the deferred detail &mdash; the evaluator has no visibility into linked pages' content, so check that the linked page actually covers what's missing before treating a low completeness/structure score as real.
+* **Product-design feedback presented as documentation gaps**: The evaluator may recommend changing how the product works (for example, replacing an email-based token process with an automated endpoint). If the documentation accurately describes the product behavior, the docs are correct&mdash;disregard the feedback.
+* **Overview, index, and explanation (conceptual guide) pages flagged as incomplete reference documents**: Declaring the correct `docType` (see [Classifying documents with `docType`](supported-formats.md#classifying-documents-with-doctype)) now grounds the Structure and Completeness criteria in that type's own checklist via guaranteed retrieval, which substantially reduces this false positive. Residual risk remains when `docType` is omitted (the evaluator falls back to inferring type from content) or when a document links out to a reference page that doesn't actually cover the deferred detail&mdash;the evaluator has no visibility into linked pages' content, so check that the linked page actually covers what's missing before treating a low completeness/structure score as real.
 
 ## Cross-reference against the Diátaxis document type
 
 Each Diátaxis document type has different completeness standards. Apply the right criteria for the doc type before acting on feedback:
 
 * **Tutorials** should include prerequisites, step-by-step instructions, and a concrete outcome. Missing reference material is not a gap.
-* **How-to guides** should include steps, a response section, and links to related content. Missing conceptual background is not a gap &mdash; link to the explanation doc instead.
+* **How-to guides** should include steps, a response section, and links to related content. Missing conceptual background is not a gap&mdash;link to the explanation doc instead.
 * **Integration guides** (`docType: integration-guide`) follow the same requirements as how-to guides and include error-handling guidance for common failures. Missing this is a legitimate completeness gap for integration guides&mdash;it isn't for plain how-to guides.
 * **Explanation docs** should answer "why" and "what." Missing code examples or procedural steps are not gaps.
 * **Reference docs** should be complete and accurate. Missing examples or error codes are legitimate gaps.
-* **Overview and index pages** should provide a brief statement of what the section covers plus categorized links to the actual content. Missing parameter tables, schemas, error codes, numbered steps, or conceptual depth is not a gap &mdash; that content belongs on the linked pages.
+* **Overview and index pages** should provide a brief statement of what the section covers plus categorized links to the actual content. Missing parameter tables, schemas, error codes, numbered steps, or conceptual depth is not a gap&mdash;that content belongs on the linked pages.
 
 ## A flat score of 1 means out of scope, not poor quality
 
 When every criterion scores exactly 1 and each feedback sentence says the criteria don't apply, the evaluator is refusing the document rather than judging it. The tool schema requires an integer from 1 to 5 for every criterion, so refusal has nowhere to go but the floor.
 
-Distinguish this from a genuinely weak document, which scores unevenly. Clarity and consistency survive even when completeness collapses, because prose can be well written while omitting required reference material. A template scaffold in one run scored 2 on clarity, 1 on completeness, 3 on accuracy, 2 on consistency, and 1 on structure &mdash; an uneven profile, and a real reading. A flat 1/1/1/1/1 is not.
+Distinguish this from a genuinely weak document, which scores unevenly. Clarity and consistency survive even when completeness collapses, because prose can be well written while omitting required reference material. A template scaffold in one run scored 2 on clarity, 1 on completeness, 3 on accuracy, 2 on consistency, and 1 on structure&mdash;an uneven profile, and a real reading. A flat 1/1/1/1/1 is not.
 
 ## Case study: evaluating this documentation set
 
@@ -65,11 +65,11 @@ The nine pages in `docs/` were scored against the shipped knowledge base. Seven 
 
 Same author, same day, same rubric. `customization.md` is not four points worse-written than the pages that scored 5. It is the page furthest from anything resembling an API, and it fell hardest outside a rubric built for API and developer documentation. Its feedback said so plainly on every criterion: "completeness criteria for parameters, responses, and error codes do not apply," "does not fit any of the Diátaxis types," and finally "This document is out of scope for evaluation."
 
-Acting on that feedback would mean adding endpoints, parameters, and error codes to a guide about editing a system prompt &mdash; inventing an API to satisfy a score. The scores stand uncorrected for that reason.
+Acting on that feedback would mean adding endpoints, parameters, and error codes to a guide about editing a system prompt&mdash;inventing an API to satisfy a score. The scores stand uncorrected for that reason.
 
-`output-reference.md` scored unevenly, which is the profile worth reading closely. Buried in its feedback was one fair observation: the page's purpose and audience were ambiguous. Its opening line still read "This section outlines..." &mdash; a leftover from when it was a section of the README rather than a page of its own. That sentence was rewritten, along with the same artifact on three sibling pages. The rest of the feedback, asking for HTTP methods and status codes in a document that describes the evaluator's own JSON output, was the same category error.
+`output-reference.md` scored unevenly, which is the profile worth reading closely. Buried in its feedback was one fair observation: the page's purpose and audience were ambiguous. Its opening line still read "This section outlines..."&mdash;a leftover from when it was a section of the README rather than a page of its own. That sentence was rewritten, along with the same artifact on three sibling pages. The rest of the feedback, asking for HTTP methods and status codes in a document that describes the evaluator's own JSON output, was the same category error.
 
-The underlying cause is that `knowledge_base/` is specific to fintech and API documentation, and these pages are neither of those. Properly scoring tooling documentation would mean pointing the evaluator at a knowledge base written for it &mdash; which is what [Customization](./customization.md) explains how to do. The page that scored 1 documents the fix for why it scored 1.
+The underlying cause is that `knowledge_base/` is specific to fintech and API documentation, and these pages are neither of those. Properly scoring tooling documentation would mean pointing the evaluator at a knowledge base written for it&mdash;which is what [Customization](./customization.md) explains how to do. The page that scored 1 documents the fix for why it scored 1.
 
 ## Iterate, don't over-optimize
 
@@ -91,7 +91,7 @@ LLM evaluations are not deterministic. The same document can receive slightly di
 
 * **No visibility into linked or complementary pages**: The evaluator scores one file in isolation and cannot verify what a linked page actually contains. For documents with a declared `docType`, guaranteed retrieval of that type's own checklist (see [Classifying documents with `docType`](supported-formats.md#classifying-documents-with-doctype)) now correctly treats deferral to a linked page as expected behavior for overview and explanation types, rather than a completeness gap. This limitation still applies when `docType` is omitted, or when a linked page is claimed to cover something it doesn't actually cover. Before trusting a low completeness/structure score, check whether the missing content lives one link away.
 
-* **Snippet content is never evaluated in context**: MDX `import` statements and JSX tags are stripped before evaluation (see [MDX handling](supported-formats.md#mdx-handling)), so a reusable snippet's text is not evaluated as part of the pages that include it. Evaluated on its own, a snippet is an out-of-context fragment and scores poorly for missing structure it was never meant to carry &mdash; prerequisites lists, endpoint metadata, surrounding schema. Neither reading is useful, so snippet files are best excluded with `skip-evaluation: true`; just be aware that their content will then go unreviewed by the evaluator and will need human review instead.
+* **Snippet content is never evaluated in context**: MDX `import` statements and JSX tags are stripped before evaluation (see [MDX handling](supported-formats.md#mdx-handling)), so a reusable snippet's text is not evaluated as part of the pages that include it. Evaluated on its own, a snippet is an out-of-context fragment and scores poorly for missing structure it was never meant to carry&mdash;prerequisites lists, endpoint metadata, surrounding schema. Neither reading is useful, so snippet files are best excluded with `skip-evaluation: true`; just be aware that their content will then go unreviewed by the evaluator and will need human review instead.
 
 * **Disclosed caveats scored as if undisclosed**: When a document explicitly flags its own limitation&mdash;a known naming inconsistency, illustrative-only code examples&mdash;the evaluator still penalizes it as a defect. It doesn't appear to register in-document disclaimers as mitigating context.
 

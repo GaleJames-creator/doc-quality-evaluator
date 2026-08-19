@@ -11,7 +11,9 @@ words; these checks find defects in correctly spelled text:
   * decapitalized starts    ". his applies"     — an edit clipping a capital
   * broken relative links   a moved or renamed page
   * missing anchors         a heading that no longer exists
-  * raw dashes in prose     house style requires &mdash; / &ndash; entities
+  * raw dashes in prose     house style requires &mdash;/&ndash; entities
+  * stray periods           `page`. or No. in a table cell, from an
+                            operating system text substitution
 
 Reads .md, .mdx, .yaml, and .yml. YAML is included because an OpenAPI
 `summary` or `description` is published documentation once a site generator
@@ -63,6 +65,27 @@ DOC_EXTS = (".md", ".mdx", ".yaml", ".yml")
 DASH_EXTS = (".md", ".mdx")
 DASH_EXEMPT_DIRS = {"knowledge_base", "agent"}
 
+# House style sets dash entities closed: word&mdash;word, no surrounding spaces.
+# One exception: a table cell whose entire content is a dash keeps its padding,
+# because there the dash marks "not applicable" rather than punctuating a
+# sentence, and `| &mdash; |` is simply how such a cell is written.
+DASH_ENTITIES = ("&mdash;", "&ndash;")
+
+# A period that arrived by accident rather than by intent. macOS substitutes
+# ". " for a double space when "Add period with double-space" is on, and padding
+# a table cell to align its pipes is exactly a double-space keystroke. The result
+# lands in parameter names and required flags, reads as deliberate, and no spell
+# checker objects, because a period is valid text.
+#
+# The signature is a single-token cell ending in a period: `page`. or No. or
+# Type. A one-word cell needs no terminal punctuation, so the period is almost
+# always the substitution. Multi-word cells end in periods legitimately and are
+# left alone.
+STRAY_PERIOD = re.compile(r"^\S+\.$")
+
+# Abbreviations that are legitimately a whole cell.
+PERIOD_OK = {"e.g.", "i.e.", "etc.", "vs.", "cf.", "approx."}
+
 # Lowercase fragments that are real words missing a leading capital. Kept
 # deliberately short: a word that legitimately starts a sentence in lowercase
 # (such as "here" or "or") would produce false positives.
@@ -84,7 +107,17 @@ def find_files(paths: list[str]) -> list[Path]:
     """Expand paths into Markdown files, skipping generated and sample content."""
     out: set[Path] = set()
     for raw in paths:
-        p = (ROOT / raw) if not os.path.isabs(raw) else Path(raw)
+        # Resolve a relative path against the working directory, the way every
+        # other command line tool does. Resolving against ROOT instead means
+        # running this script from another repository silently checks a
+        # same-named file in this one and reports it clean.
+        p = Path(raw) if os.path.isabs(raw) else Path.cwd() / raw
+        if not p.exists():
+            # Fall back to the default paths' home so `check_docs.py docs/`
+            # still works when invoked from elsewhere in this repository.
+            fallback = ROOT / raw
+            if fallback.exists():
+                p = fallback
         if p.is_dir():
             candidates = sorted(f for e in DOC_EXTS for f in p.rglob(f"*{e}"))
         else:
@@ -103,13 +136,15 @@ def find_files(paths: list[str]) -> list[Path]:
 
 def prose_lines(path: Path):
     """
-    Yield (line_number, prose) with fenced blocks dropped and code spans masked.
+    Yield (line_number, masked_prose, raw_line) for lines outside a code fence.
 
     Code spans become "@" rather than an empty string. Deleting them outright
     joins the words on either side, so "such as `x` as shown" collapses to
     "such as as shown" and trips the repeated-word check. "@" is not a word
     character and not sentence-ending, so it breaks adjacency without
-    disturbing the other checks.
+    disturbing the other checks. The raw line is yielded alongside it for the
+    checks that need the original text, such as the stray-period check, which
+    reports the offending cell back to the reader.
     """
     in_fence = False
     for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
@@ -118,7 +153,7 @@ def prose_lines(path: Path):
             continue
         if in_fence:
             continue
-        yield n, re.sub(r"`[^`]*`", "@", line)
+        yield n, re.sub(r"`[^`]*`", "@", line), line
 
 
 def slug(text: str) -> str:
@@ -149,23 +184,86 @@ def heading_slugs(path: Path) -> set[str]:
     return out
 
 
+def _stray_periods(text: str) -> list[str]:
+    """
+    Return table cells that appear to have gained a period by accident.
+
+    Only table rows are examined. Elsewhere a trailing period is ordinary
+    punctuation, and flagging it would bury the real finding in noise.
+    """
+    if not text.lstrip().startswith("|"):
+        return []
+    out = []
+    for cell in text.strip().strip("|").split("|"):
+        cell = cell.strip()
+        if not STRAY_PERIOD.match(cell) or cell.lower() in PERIOD_OK:
+            continue
+        # Non-ASCII tokens here are mojibake, not punctuation. A document about
+        # encoding problems legitimately shows corrupted text in a before-and-
+        # after table, and that is a different defect than a stray period.
+        if not cell.isascii():
+            continue
+        out.append(cell)
+    return out
+
+
+def _spaced_entities(text: str) -> list[str]:
+    """
+    Return dash entities that carry a space on either side.
+
+    A table row is examined cell by cell, so a cell holding nothing but a dash
+    keeps its padding without being reported. Everywhere else the whole line is
+    one segment.
+    """
+    if text.lstrip().startswith("|"):
+        segments = text.strip().strip("|").split("|")
+    else:
+        segments = [text]
+
+    found = []
+    for seg in segments:
+        if seg.strip() in DASH_ENTITIES:
+            continue
+        for entity in DASH_ENTITIES:
+            if f" {entity}" in seg or f"{entity} " in seg:
+                found.append(entity)
+    return found
+
+
 def check_prose(path: Path) -> list[str]:
     """Repeated words, decapitalized sentence starts, and raw dashes."""
     problems = []
     rel = display(path)
     check_dashes = (path.suffix in DASH_EXTS
                     and not DASH_EXEMPT_DIRS & set(rel.parts))
-    for n, text in prose_lines(path):
+    for n, text, raw in prose_lines(path):
         for m in re.finditer(r"\b(\w+)\s+\1\b", text, re.IGNORECASE):
+            # Repeated digit groups are normal in test data: card numbers like
+            # 4242 4242 4242 4242, routing numbers, phone numbers, IDs. A
+            # doubled word is a typo; a doubled number is usually the point.
+            if m.group(1).isdigit():
+                continue
             problems.append(f"{rel}:{n}: repeated word: '{m.group(0)}'")
+        for cell in _stray_periods(raw):
+            problems.append(
+                f"{rel}:{n}: stray period in table cell: '{cell}'")
         for m in re.finditer(r"(?:^|[.!?]\s+)([a-z]\w*)", text):
             if m.group(1) in DECAPITALIZED:
                 problems.append(
                     f"{rel}:{n}: sentence starts with '{m.group(1)}' "
                     f"(missing a leading capital?)")
-        if check_dashes and ("—" in text or "–" in text):
-            problems.append(
-                f"{rel}:{n}: raw dash in prose; use &mdash; or &ndash;")
+        # Headings are exempt from both dash rules. A heading's text generates
+        # its anchor, and other pages link to that anchor, so changing one risks
+        # a broken cross-reference for a cosmetic gain. Platforms differ in
+        # whether they slug the rendered text or the raw source, and that
+        # difference is not worth discovering after publishing.
+        if check_dashes and not text.lstrip().startswith("#"):
+            if "—" in text or "–" in text:
+                problems.append(
+                    f"{rel}:{n}: raw dash in prose; use &mdash; or &ndash;")
+            for entity in _spaced_entities(text):
+                problems.append(
+                    f"{rel}:{n}: spaced {entity}; house style sets it closed")
     return problems
 
 
@@ -180,7 +278,7 @@ def check_links(path: Path, all_files: list[Path]) -> list[str]:
     problems = []
     rel = display(path)
     base = path.parent
-    prose = "\n".join(text for _, text in prose_lines(path))
+    prose = "\n".join(text for _, text, _raw in prose_lines(path))
     for link in re.findall(r"\]\(([^)\s]+)\)", prose):
         if link.startswith(("http://", "https://", "mailto:", "#!")):
             continue
