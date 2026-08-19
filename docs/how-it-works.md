@@ -30,7 +30,7 @@ The following image shows the pull request flow. It reuses the same classificati
 
 The `doc-quality-evaluator` prints status messages before the JSON results. If you pipe the output to a file (`python3 evaluate.py samples/doc.mdx > report.json`), the status messages will be mixed in with the JSON. You have two choices:
 
-* If clean piped output matters for your workflow, the conventional fix is to send status messages to `stderr` and reserve `stdout` for the JSON &mdash; a one-line change (`print(..., file=sys.stderr)`) that keeps piped output clean.
+* If clean piped output matters for your workflow, the conventional fix is to send status messages to `stderr` and reserve `stdout` for the JSON&mdash;a one-line change (`print(..., file=sys.stderr)`) that keeps piped output clean.
 * Copy the JSON from below the divider line to a report file.
 
 A `baseline` evaluation for a Markdown file (for example, `webhooks-Admin-UI.md`) begins with the following status messages:
